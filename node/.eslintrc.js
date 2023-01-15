@@ -65,7 +65,7 @@ const eslintConfig =
 			}
 		],
 		'keyword-spacing'      : 2,
-		'linebreak-style'      : [ 2, isWindows ? 'windows' : 'unix' ],
+		'linebreak-style'      : [ 0, isWindows ? 'windows' : 'unix' ],
 		'lines-around-comment' : [ 2,
 			{
 				allowBlockStart    : true,

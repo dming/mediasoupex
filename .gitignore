@@ -36,3 +36,7 @@
 /.vscode
 # JetBrains IDE stuff.
 /.idea
+
+
+dming/
+pnpm-lock.yaml

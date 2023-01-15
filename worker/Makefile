@@ -184,7 +184,8 @@ clean-pip:
 	$(RM) -rf $(PIP_DIR)
 
 clean-subprojects: meson-ninja
-	$(MESON) subprojects purge --include-cache --confirm
+# $(MESON) subprojects purge --include-cache --confirm
+	echo "clean-subprojects do nothing !"
 
 clean-all: clean-subprojects
 	$(RM) -rf $(MEDIASOUP_OUT_DIR)

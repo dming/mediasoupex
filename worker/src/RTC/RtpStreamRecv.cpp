@@ -256,7 +256,7 @@ namespace RTC
 
 		// Process the packet at codec level.
 		if (packet->GetPayloadType() == GetPayloadType())
-			RTC::Codecs::Tools::ProcessRtpPacket(packet, GetMimeType());
+			RTC::Codecs::Tools::ProcessRtpPacket(packet, GetMimeType());//[dming] packet->SetPayloadDescriptorHandler
 
 		// Pass the packet to the NackGenerator.
 		if (this->params.useNack)
