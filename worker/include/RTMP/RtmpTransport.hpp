@@ -1,18 +1,18 @@
 
 
 /**
- * Rtmp Transport , like SRS SrsLiveSource. Managed by RtmpTransportManager. 
+ * Rtmp Transport , like SRS SrsLiveSource. Managed by RtmpTransportManager.
  * provide producer and consumers.
-*/
-
+ */
 
 #ifndef MS_RTMP_TRANSPORT_HPP
 #define MS_RTMP_TRANSPORT_HPP
-namespace RTMP 
+namespace RTMP
 {
-    class RtmpTransport 
-    {
-	  
-    };
+	class RtmpTransport
+	{
+		RtmpTransport();
+		~RtmpTransport();
+	};
 } // namespace RTMP
 #endif

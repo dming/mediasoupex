@@ -27,16 +27,19 @@ if host_machine.system() == 'windows'
 endif
 
 if get_option('ms_log_trace')
+  message('cpp_args add ', '-DMS_LOG_TRACE')
   cpp_args += [
     '-DMS_LOG_TRACE',
   ]
 endif
 
 if get_option('ms_log_file_line')
+  message('cpp_args add ', '-DMS_LOG_FILE_LINE')
   cpp_args += [
     '-DMS_LOG_FILE_LINE',
   ]
 endif
+# message('cpp_args is ', cpp_args)
 
 common_sources = [
   'src/lib.cpp',
@@ -157,6 +160,12 @@ common_sources = [
   'src/RTC/RTCP/XR.cpp',
   'src/RTC/RTCP/XrDelaySinceLastRr.cpp',
   'src/RTC/RTCP/XrReceiverReferenceTime.cpp',
+  'src/RTMP/RtmpHandshake.cpp',
+  'src/RTMP/RtmpServer.cpp',
+  'src/RTMP/RtmpTcpConnection.cpp',
+  'src/RTMP/RtmpTcpServer.cpp',
+  'src/RTMP/RtmpTransport.cpp',
+  'src/RTMP/RtmpTransportManager.cpp',
 ]
 
 cpp = meson.get_compiler('cpp')

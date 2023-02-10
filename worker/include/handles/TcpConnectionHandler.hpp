@@ -4,6 +4,7 @@
 #include "common.hpp"
 #include <uv.h>
 #include <string>
+#include <vector>
 
 class TcpConnectionHandler
 {
@@ -43,11 +44,28 @@ public:
 		TcpConnectionHandler::onSendCallback* cb{ nullptr };
 	};
 
+	struct WriteData
+	{
+		explicit WriteData(const uint8_t* data, size_t len) : data(data), len(len)
+		{
+		}
+
+		~WriteData()
+		{
+		}
+		const uint8_t* data;
+		size_t len;
+	};
+
 public:
 	explicit TcpConnectionHandler(size_t bufferSize);
 	TcpConnectionHandler& operator=(const TcpConnectionHandler&) = delete;
 	TcpConnectionHandler(const TcpConnectionHandler&)            = delete;
 	virtual ~TcpConnectionHandler();
+
+	/* Pure virtual methods that must be implemented by the subclass. */
+public:
+	virtual void Send(const uint8_t* data, size_t len, ::TcpConnectionHandler::onSendCallback* cb) = 0;
 
 public:
 	void Close();
@@ -66,12 +84,14 @@ public:
 		return this->uvHandle;
 	}
 	void Start();
+	void Write(const uint8_t* data1, size_t len1, TcpConnectionHandler::onSendCallback* cb);
 	void Write(
 	  const uint8_t* data1,
 	  size_t len1,
 	  const uint8_t* data2,
 	  size_t len2,
 	  TcpConnectionHandler::onSendCallback* cb);
+	void Write(std::vector<WriteData>&& datas, TcpConnectionHandler::onSendCallback* cb);
 	void ErrorReceiving();
 	const struct sockaddr* GetLocalAddress() const
 	{

@@ -1,5 +1,5 @@
 #define MS_CLASS "Worker"
-// #define MS_LOG_DEV_LEVEL 3
+#define MS_LOG_DEV_LEVEL 3
 
 #include "Worker.hpp"
 #include "ChannelMessageRegistrator.hpp"
@@ -236,6 +236,40 @@ RTC::WebRtcServer* Worker::GetWebRtcServerFromData(json& data) const
 	return webRtcServer;
 }
 
+void Worker::SetNewRtmpServerIdFromData(json& data, std::string& rtmpServerId) const
+{
+	MS_TRACE();
+
+	auto jsonRtmpServerIdIt = data.find("rtmpServerId");
+
+	if (jsonRtmpServerIdIt == data.end() || !jsonRtmpServerIdIt->is_string())
+		MS_THROW_ERROR("missing webRtcServerId");
+
+	rtmpServerId.assign(jsonRtmpServerIdIt->get<std::string>());
+
+	if (this->mapRtmpServers.find(rtmpServerId) != this->mapRtmpServers.end())
+		MS_THROW_ERROR("a RtmpServer with same rtmpServerId already exists");
+}
+
+RTMP::RtmpServer* Worker::GetRtmpServerFromData(json& data) const
+{
+	MS_TRACE();
+
+	auto jsonRtmpServerIdIt = data.find("rtmpServerId");
+
+	if (jsonRtmpServerIdIt == data.end() || !jsonRtmpServerIdIt->is_string())
+		MS_THROW_ERROR("missing handlerId.rtmpServerId");
+
+	auto it = this->mapRtmpServers.find(jsonRtmpServerIdIt->get<std::string>());
+
+	if (it == this->mapRtmpServers.end())
+		MS_THROW_ERROR("RtmpServer not found");
+
+	RTMP::RtmpServer* rtmpServer = it->second;
+
+	return rtmpServer;
+}
+
 void Worker::SetNewRouterIdFromData(json& data, std::string& routerId) const
 {
 	MS_TRACE();
@@ -416,6 +450,56 @@ inline void Worker::HandleRequest(Channel::ChannelRequest* request)
 			delete router;
 
 			MS_DEBUG_DEV("Router closed [id:%s]", router->id.c_str());
+
+			request->Accept();
+
+			break;
+		}
+
+		case Channel::ChannelRequest::MethodId::WORKER_CREATE_RTMP_SERVER:
+		{
+			try
+			{
+				std::string rtmpServerId;
+				SetNewRtmpServerIdFromData(request->data, rtmpServerId);
+
+				auto* rtmpServer = new RTMP::RtmpServer(this->shared, rtmpServerId, request->data);
+				this->mapRtmpServers[rtmpServerId] = rtmpServer;
+
+				MS_DEBUG_DEV("RtmpServer created [rtmpServerId:%s]", rtmpServerId.c_str());
+				request->Accept();
+			}
+			catch (const MediaSoupTypeError& error)
+			{
+				MS_THROW_TYPE_ERROR("%s [method:%s]", error.what(), request->method.c_str());
+			}
+			catch (const MediaSoupError& error)
+			{
+				MS_THROW_ERROR("%s [method:%s]", error.what(), request->method.c_str());
+			}
+
+			break;
+		}
+
+		case Channel::ChannelRequest::MethodId::WORKER_RTMP_SERVER_CLOSE:
+		{
+			RTMP::RtmpServer* rtmpServer{ nullptr };
+
+			try
+			{
+				rtmpServer = GetRtmpServerFromData(request->data);
+			}
+			catch (const MediaSoupError& error)
+			{
+				MS_THROW_ERROR("%s [method:%s]", error.what(), request->method.c_str());
+			}
+
+			// Remove it from the map and delete it.
+			this->mapRtmpServers.erase(rtmpServer->id);
+
+			delete rtmpServer;
+
+			MS_DEBUG_DEV("RtmpServer closed [id:%s]", rtmpServer->id.c_str());
 
 			request->Accept();
 

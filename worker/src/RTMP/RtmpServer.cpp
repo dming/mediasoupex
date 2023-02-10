@@ -1,70 +1,88 @@
 #define MS_CLASS "RTMP::RtmpServer"
+#define MS_LOG_DEV_LEVEL 3
 
 #include "RTMP/RtmpServer.hpp"
 #include "Logger.hpp"
 #include "MediaSoupErrors.hpp"
 #include "Utils.hpp"
 
-namespace RTMP 
+namespace RTMP
 {
-    /* Instance methods. */
+	/* Instance methods. */
 
-    RtmpServer::RtmpServer(RTC::Shared* shared, const std::string& id, json& data)
-        : id(id), shared(shared)
-    {
-        MS_TRACE();
-        /**
-         * data interface:
-         * {
-         *  listenIp: string,
-         *  port: number
-         * }
-         */
+	RtmpServer::RtmpServer(RTC::Shared* shared, const std::string& id, json& data)
+	  : id(id), shared(shared)
+	{
+		MS_TRACE();
 
-        std::string ip;
+		auto jsonListenInfoIt = data.find("listenInfo");
+		if (jsonListenInfoIt == data.end())
+			MS_THROW_TYPE_ERROR("missing listenInfo 2");
+		else if (!jsonListenInfoIt->is_object())
+			MS_THROW_TYPE_ERROR("wrong listenInfo (not an object)");
 
-        auto jsonListenIpIt = data.find("listenIp");
-        if (jsonListenIpIt == data.end())
-            MS_THROW_TYPE_ERROR("missing listenIp");
-        else if (!jsonListenIpIt->is_string())
-            MS_THROW_TYPE_ERROR("wrong listenIp (not an string)");
-        
-        ip = jsonListenIpIt->get<std::string>();
+		auto& jsonListenInfo = *jsonListenInfoIt;
 
-        // This may throw.
-        Utils::IP::NormalizeIp(ip);
+		std::string listenIp;
 
-        uint16_t port{0};
-        auto jsonPortIt = data.find("port");
-        if (jsonPortIt != data.end()) 
-        {
-            if (!(jsonPortIt->is_number() && Utils::Json::IsPositiveInteger(*jsonPortIt)))
-                MS_THROW_TYPE_ERROR("wrong port (not a positive number)");
-            
-            port = jsonPortIt->get<uint16_t>();
-        }
+		// data format: RtmpServerListenInfo:
+		auto jsonListenIpIt = jsonListenInfo.find("listenIp");
+		if (jsonListenIpIt == jsonListenInfo.end())
+			MS_THROW_TYPE_ERROR("missing listenIp 2");
+		else if (!jsonListenIpIt->is_string())
+			MS_THROW_TYPE_ERROR("wrong listenIp (not an string)");
 
-        if (port != 0)
-            tcpServer = new RTMP::RtmpTcpServer(this, this, ip, port);
-        else 
-            tcpServer = new RTMP::RtmpTcpServer(this, this, ip);
-        
-        this->shared->channelMessageRegistrator->RegisterHandler(
-            this->id,
-            /*channelRequestHandler*/ this,
-            /*payloadChannelRequestHandler*/ nullptr,
-            /*payloadChannelNotificationHandler*/ nullptr);
+		listenIp = jsonListenIpIt->get<std::string>();
+
+		// This may throw.
+		Utils::IP::NormalizeIp(listenIp);
+
+		uint16_t port{ 0 };
+
+		auto jsonPortIt = jsonListenInfo.find("port");
+
+		if (jsonPortIt != jsonListenInfo.end())
+		{
+			if (!(jsonPortIt->is_number() && Utils::Json::IsPositiveInteger(*jsonPortIt)))
+				MS_THROW_TYPE_ERROR("wrong port (not a positive number)");
+
+			port = jsonPortIt->get<uint16_t>();
+		}
+
+		if (port != 0)
+			tcpServer = new RTMP::RtmpTcpServer(this, this, listenIp, port);
+		else
+			tcpServer = new RTMP::RtmpTcpServer(this, this, listenIp);
+
+		this->shared->channelMessageRegistrator->RegisterHandler(
+		  this->id,
+		  /*channelRequestHandler*/ this,
+		  /*payloadChannelRequestHandler*/ nullptr,
+		  /*payloadChannelNotificationHandler*/ nullptr);
 	}
 
-    RtmpServer::~RtmpServer()
-    {
-        // unregister shared
-        this->shared->channelMessageRegistrator->UnregisterHandler(this->id);
-        // clear tcpserver
-    }
+	RtmpServer::~RtmpServer()
+	{
+		MS_TRACE();
+		// unregister shared
+		this->shared->channelMessageRegistrator->UnregisterHandler(this->id);
+		// clear tcpserver
+	}
 
-    void RtmpServer::HandleRequest(Channel::ChannelRequest* request)
-    {
-        
-    }
-}
+	void RtmpServer::HandleRequest(Channel::ChannelRequest* request)
+	{
+		MS_TRACE();
+	}
+
+	void RtmpServer::OnRtcTcpConnectionClosed(
+	  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTcpConnection* connection)
+	{
+		MS_TRACE();
+	}
+
+	void RtmpServer::OnTcpConnectionPacketReceived(
+	  RTMP::RtmpTcpConnection* connection, const uint8_t* data, size_t len)
+	{
+		MS_TRACE();
+	}
+} // namespace RTMP

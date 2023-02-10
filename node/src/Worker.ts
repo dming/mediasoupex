@@ -9,6 +9,7 @@ import { Channel } from './Channel';
 import { PayloadChannel } from './PayloadChannel';
 import { Router, RouterOptions } from './Router';
 import { WebRtcServer, WebRtcServerOptions } from './WebRtcServer';
+import { RtmpServer, RtmpServerOptions } from './RtmpServer';
 
 export type WorkerLogLevel = 'debug' | 'warn' | 'error' | 'none';
 
@@ -188,6 +189,7 @@ export type WorkerObserverEvents =
 	close: [];
 	newwebrtcserver: [WebRtcServer];
 	newrouter: [Router];
+	newrtmpserver: [RtmpServer];
 };
 
 // If env MEDIASOUP_WORKER_BIN is given, use it as worker binary.
@@ -629,6 +631,41 @@ export class Worker extends EnhancedEventEmitter<WorkerEvents>
 		this.#observer.safeEmit('newwebrtcserver', webRtcServer);
 
 		return webRtcServer;
+	}
+
+	/**
+	 * Create a RtmpServer.
+	 */
+	async createRtmpServer(
+		{
+			listenInfo,
+			appData
+		}: RtmpServerOptions
+	): Promise<RtmpServer>
+	{
+		logger.debug('createRtmpServer()');
+
+		if (appData && typeof appData !== 'object')
+			throw new TypeError('if given, appData must be an object');
+
+		const reqData =
+		{
+			rtmpServerId : uuidv4(),
+			listenInfo
+		};
+
+		await this.#channel.request('worker.createRtmpServer', undefined, reqData);
+		const rtmpServer = new RtmpServer(
+			{
+				internal : { rtmpServerId: reqData.rtmpServerId },
+				channel  : this.#channel,
+				appData
+			});
+		
+		// Emit observer event.
+		this.#observer.safeEmit('newrtmpserver', rtmpServer);
+
+		return rtmpServer;
 	}
 
 	/**

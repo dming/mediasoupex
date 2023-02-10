@@ -63,3 +63,21 @@ using PayloadChannelWriteFn  = void (*)(
   ChannelWriteCtx /* ctx */);
 
 #endif
+
+// To free the p and set to NULL.
+// @remark The p must be a pointer T*.
+#define FREEP(p)                                                                                   \
+	if (p)                                                                                           \
+	{                                                                                                \
+		delete p;                                                                                      \
+		p = NULL;                                                                                      \
+	}                                                                                                \
+	(void)0
+// Please use the freepa(T[]) to free an array, otherwise the behavior is undefined.
+#define FREEA(pa)                                                                                  \
+	if (pa)                                                                                          \
+	{                                                                                                \
+		delete[] pa;                                                                                   \
+		pa = NULL;                                                                                     \
+	}                                                                                                \
+	(void)0

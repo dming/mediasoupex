@@ -175,11 +175,29 @@ void TcpConnectionHandler::Start()
 }
 
 void TcpConnectionHandler::Write(
+  const uint8_t* data1, size_t len1, TcpConnectionHandler::onSendCallback* cb)
+{
+	MS_TRACE();
+	std::vector<WriteData> datas;
+	datas.emplace_back(data1, len1);
+	Write(std::move(datas), cb);
+}
+
+void TcpConnectionHandler::Write(
   const uint8_t* data1,
   size_t len1,
   const uint8_t* data2,
   size_t len2,
   TcpConnectionHandler::onSendCallback* cb)
+{
+	MS_TRACE();
+	std::vector<WriteData> datas;
+	datas.emplace_back(data1, len1);
+	datas.emplace_back(data2, len2);
+	Write(std::move(datas), cb);
+}
+
+void TcpConnectionHandler::Write(std::vector<WriteData>&& datas, TcpConnectionHandler::onSendCallback* cb)
 {
 	MS_TRACE();
 
@@ -194,7 +212,15 @@ void TcpConnectionHandler::Write(
 		return;
 	}
 
-	if (len1 == 0 && len2 == 0)
+	size_t totalLen = 0;
+	auto it         = datas.begin();
+	for (it; it != datas.end(); ++it)
+	{
+		WriteData* d = std::addressof(*it);
+		totalLen += d->len;
+	}
+
+	if (totalLen == 0)
 	{
 		if (cb)
 		{
@@ -205,17 +231,20 @@ void TcpConnectionHandler::Write(
 		return;
 	}
 
-	size_t totalLen = len1 + len2;
-	uv_buf_t buffers[2];
+	std::vector<uv_buf_t> buffers;
 	int written{ 0 };
 	int err;
 
 	// First try uv_try_write(). In case it can not directly write all the given
 	// data then build a uv_req_t and use uv_write().
 
-	buffers[0] = uv_buf_init(reinterpret_cast<char*>(const_cast<uint8_t*>(data1)), len1);
-	buffers[1] = uv_buf_init(reinterpret_cast<char*>(const_cast<uint8_t*>(data2)), len2);
-	written    = uv_try_write(reinterpret_cast<uv_stream_t*>(this->uvHandle), buffers, 2);
+	it = datas.begin();
+	for (it; it != datas.end(); ++it)
+	{
+		WriteData* d = std::addressof(*it);
+		buffers.push_back(uv_buf_init(reinterpret_cast<char*>(const_cast<uint8_t*>(d->data)), d->len));
+	}
+	written = uv_try_write(reinterpret_cast<uv_stream_t*>(this->uvHandle), &buffers[0], buffers.size());
 
 	// All the data was written. Done.
 	if (written == static_cast<int>(totalLen))
@@ -251,21 +280,24 @@ void TcpConnectionHandler::Write(
 
 	writeData->req.data = static_cast<void*>(writeData);
 
-	// If the first buffer was not entirely written then splice it.
-	if (static_cast<size_t>(written) < len1)
+	size_t storeLen = 0;
+	int written2    = written;
+	it              = datas.begin();
+	for (it; it != datas.end(); ++it)
 	{
-		std::memcpy(
-		  writeData->store, data1 + static_cast<size_t>(written), len1 - static_cast<size_t>(written));
-		std::memcpy(writeData->store + (len1 - static_cast<size_t>(written)), data2, len2);
+		WriteData* d = std::addressof(*it);
+		if (written2 >= d->len)
+		{
+			written2 -= d->len;
+		}
+		else
+		{
+			std::memcpy(writeData->store + storeLen, d->data + written2, d->len - written2);
+			storeLen += d->len - written2;
+			written2 = 0;
+		}
 	}
-	// Otherwise just take the pending data in the second buffer.
-	else
-	{
-		std::memcpy(
-		  writeData->store,
-		  data2 + (static_cast<size_t>(written) - len1),
-		  len2 - (static_cast<size_t>(written) - len1));
-	}
+	MS_ASSERT(storeLen == pendingLen, "WriteData store wrong: storeLen not equal pendingLen");
 
 	writeData->cb = cb;
 

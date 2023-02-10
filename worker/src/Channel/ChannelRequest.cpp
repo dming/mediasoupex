@@ -22,6 +22,10 @@ namespace Channel
 		{ "worker.closeWebRtcServer",                    ChannelRequest::MethodId::WORKER_WEBRTC_SERVER_CLOSE                       },
 		{ "webRtcServer.dump",                           ChannelRequest::MethodId::WEBRTC_SERVER_DUMP                               },
 		{ "worker.closeRouter",                          ChannelRequest::MethodId::WORKER_CLOSE_ROUTER                              },
+		// add by [dming]
+		{ "worker.createRtmpServer",                     ChannelRequest::MethodId::WORKER_CREATE_RTMP_SERVER                        },
+		{ "worker.closeRtmpServer",                      ChannelRequest::MethodId::WORKER_RTMP_SERVER_CLOSE                         },
+		// end
 		{ "router.dump",                                 ChannelRequest::MethodId::ROUTER_DUMP                                      },
 		{ "router.createWebRtcTransport",                ChannelRequest::MethodId::ROUTER_CREATE_WEBRTC_TRANSPORT                   },
 		{ "router.createWebRtcTransportWithServer",      ChannelRequest::MethodId::ROUTER_CREATE_WEBRTC_TRANSPORT_WITH_SERVER       },

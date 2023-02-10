@@ -2,6 +2,7 @@
 #define MS_WORKER_HPP
 
 #include "common.hpp"
+#include "RTMP/RtmpServer.hpp"
 #include "Channel/ChannelRequest.hpp"
 #include "Channel/ChannelSocket.hpp"
 #include "PayloadChannel/PayloadChannelNotification.hpp"
@@ -31,7 +32,9 @@ private:
 	void FillJson(json& jsonObject) const;
 	void FillJsonResourceUsage(json& jsonObject) const;
 	void SetNewWebRtcServerIdFromData(json& data, std::string& webRtcServerId) const;
+	void SetNewRtmpServerIdFromData(json& data, std::string& rtmpServerId) const;
 	RTC::WebRtcServer* GetWebRtcServerFromData(json& data) const;
+	RTMP::RtmpServer* GetRtmpServerFromData(json& data) const;
 	void SetNewRouterIdFromData(json& data, std::string& routerId) const;
 	RTC::Router* GetRouterFromData(json& data) const;
 
@@ -71,6 +74,7 @@ private:
 	SignalsHandler* signalsHandler{ nullptr };
 	RTC::Shared* shared{ nullptr };
 	absl::flat_hash_map<std::string, RTC::WebRtcServer*> mapWebRtcServers;
+	absl::flat_hash_map<std::string, RTMP::RtmpServer*> mapRtmpServers;
 	absl::flat_hash_map<std::string, RTC::Router*> mapRouters;
 	// Others.
 	bool closed{ false };

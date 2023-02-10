@@ -3,8 +3,8 @@
 
 #include "common.hpp"
 #include "Utils.hpp"
-#include "RTC/TcpConnection.hpp"
-#include "RTC/UdpSocket.hpp"
+#include "handles/TcpConnectionHandler.hpp"
+#include "handles/UdpSocketHandler.hpp"
 #include <nlohmann/json.hpp>
 #include <string>
 
@@ -25,13 +25,13 @@ namespace RTC
 		};
 
 	public:
-		TransportTuple(RTC::UdpSocket* udpSocket, const struct sockaddr* udpRemoteAddr)
+		TransportTuple(UdpSocketHandler* udpSocket, const struct sockaddr* udpRemoteAddr)
 		  : udpSocket(udpSocket), udpRemoteAddr((struct sockaddr*)udpRemoteAddr), protocol(Protocol::UDP)
 		{
 			SetHash();
 		}
 
-		explicit TransportTuple(RTC::TcpConnection* tcpConnection)
+		explicit TransportTuple(TcpConnectionHandler* tcpConnection)
 		  : tcpConnection(tcpConnection), protocol(Protocol::TCP)
 		{
 			SetHash();
@@ -206,9 +206,9 @@ namespace RTC
 
 	private:
 		// Passed by argument.
-		RTC::UdpSocket* udpSocket{ nullptr };
+		UdpSocketHandler* udpSocket{ nullptr };
 		struct sockaddr* udpRemoteAddr{ nullptr };
-		RTC::TcpConnection* tcpConnection{ nullptr };
+		TcpConnectionHandler* tcpConnection{ nullptr };
 		std::string localAnnouncedIp;
 		// Others.
 		struct sockaddr_storage udpRemoteAddrStorage;
