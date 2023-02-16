@@ -3,7 +3,9 @@
 
 #include "common.hpp"
 #include "RTMP/RtmpHandshake.hpp"
+#include "RTMP/RtmpMessage.hpp"
 #include "handles/TcpConnectionHandler.hpp"
+#include <map>
 
 namespace RTMP
 {
@@ -17,7 +19,7 @@ namespace RTMP
 
 		public:
 			virtual void OnTcpConnectionPacketReceived(
-			  RTMP::RtmpTcpConnection* connection, const uint8_t* data, size_t len) = 0;
+			  RTMP::RtmpTcpConnection* connection, RtmpCommonMessage* msg) = 0;
 		};
 
 	public:
@@ -33,11 +35,25 @@ namespace RTMP
 		void UserOnTcpConnectionRead() override;
 
 	private:
+		int RecvInterlacedMessage(RtmpCommonMessage** pmsg);
+		int ReadBasicHeader(char& fmt, int& cid, int& bhLen);
+		int ReadMessageHeader(RtmpChunkStream* chunk, char fmt, int bhLen);
+		int ReadMessagePayload(RtmpChunkStream* chunk, RtmpCommonMessage** pmsg);
+
+	private:
 		// Passed by argument.
 		Listener* listener{ nullptr };
 		// Others.
 		size_t frameStart{ 0u }; // Where the latest frame starts.
 		RtmpHandshakeBytes* hsBytes;
+
+		// The chunk stream to decode RTMP messages.
+		std::map<int, RtmpChunkStream*> chunkStreams;
+		// Cache some frequently used chunk header.
+		// chunkStreamCache, the chunk stream cache.
+		RtmpChunkStream** chunkStreamCache;
+		// The input chunk size, default to 128, set by peer packet.
+		int32_t in_chunk_size;
 	};
 } // namespace RTMP
 

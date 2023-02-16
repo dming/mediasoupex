@@ -15,7 +15,6 @@ namespace RTMP
 	 *
 	 */
 	class RtmpServer : public RTMP::RtmpTcpServer::Listener,
-	                   public RTMP::RtmpTcpConnection::Listener,
 	                   public Channel::ChannelSocket::RequestHandler
 	{
 	public:
@@ -30,11 +29,6 @@ namespace RTMP
 	public:
 		void OnRtcTcpConnectionClosed(
 		  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTcpConnection* connection) override;
-
-		/* Pure virtual methods inherited from RTMP::RtmpTcpConnection::Listener. */
-	public:
-		void OnTcpConnectionPacketReceived(
-		  RTMP::RtmpTcpConnection* connection, const uint8_t* data, size_t len) override;
 
 	public:
 		// Passed by argument.

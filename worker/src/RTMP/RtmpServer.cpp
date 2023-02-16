@@ -50,9 +50,9 @@ namespace RTMP
 		}
 
 		if (port != 0)
-			tcpServer = new RTMP::RtmpTcpServer(this, this, listenIp, port);
+			tcpServer = new RTMP::RtmpTcpServer(this, listenIp, port);
 		else
-			tcpServer = new RTMP::RtmpTcpServer(this, this, listenIp);
+			tcpServer = new RTMP::RtmpTcpServer(this, listenIp);
 
 		this->shared->channelMessageRegistrator->RegisterHandler(
 		  this->id,
@@ -80,9 +80,4 @@ namespace RTMP
 		MS_TRACE();
 	}
 
-	void RtmpServer::OnTcpConnectionPacketReceived(
-	  RTMP::RtmpTcpConnection* connection, const uint8_t* data, size_t len)
-	{
-		MS_TRACE();
-	}
 } // namespace RTMP

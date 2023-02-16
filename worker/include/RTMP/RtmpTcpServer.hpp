@@ -9,10 +9,10 @@
 
 namespace RTMP
 {
-    // LIKE RTC TcpServer
-    class RtmpTcpServer : public ::TcpServerHandler
-    {
-    public:
+	// LIKE RTC TcpServer
+	class RtmpTcpServer : public ::TcpServerHandler
+	{
+	public:
 		class Listener
 		{
 		public:
@@ -23,22 +23,21 @@ namespace RTMP
 			  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTcpConnection* connection) = 0;
 		};
 
-    public:
-        RtmpTcpServer(Listener* listener, RTMP::RtmpTcpConnection::Listener* connListener, std::string& ip);
-        RtmpTcpServer(Listener* listener, RTMP::RtmpTcpConnection::Listener* connListener, std::string& ip, uint16_t port);
-        ~RtmpTcpServer() override;
-    
-    /* Pure virtual methods inherited from ::TcpServerHandler. */
+	public:
+		RtmpTcpServer(Listener* listener, std::string& ip);
+		RtmpTcpServer(Listener* listener, std::string& ip, uint16_t port);
+		~RtmpTcpServer() override;
+
+		/* Pure virtual methods inherited from ::TcpServerHandler. */
 	public:
 		void UserOnTcpConnectionAlloc() override;
 		void UserOnTcpConnectionClosed(::TcpConnectionHandler* connection) override;
-    
-    private:
-        // Passed by argument.
+
+	private:
+		// Passed by argument.
 		Listener* listener{ nullptr };
-		RTMP::RtmpTcpConnection::Listener* connListener{ nullptr };
 		bool fixedPort{ false };
-    };
+	};
 } // namespace RTMP
 
 #endif // MS_RTMP_TCP_SERVER_HPP

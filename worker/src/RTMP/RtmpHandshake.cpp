@@ -37,6 +37,7 @@ namespace RTMP
 		if (err = io->ReadFully(c0c1, 1537) != 0)
 		{
 			MS_ERROR("readC0c1 fail");
+			FREEP(c0c1);
 			return err;
 		}
 		return 0;
@@ -52,6 +53,7 @@ namespace RTMP
 		if (err = io->ReadFully(s0s1s2, 3073) != 0)
 		{
 			MS_ERROR("readS0s1s2 fail");
+			FREEP(s0s1s2);
 			return err;
 		}
 		return 0;
@@ -59,6 +61,7 @@ namespace RTMP
 
 	int RtmpHandshakeBytes::readC2(RtmpTcpConnection* io)
 	{
+		MS_TRACE();
 		int err = 0;
 		if (c2)
 			return 0;
@@ -67,6 +70,7 @@ namespace RTMP
 		if (err = io->ReadFully(c2, 1536) != 0)
 		{
 			MS_ERROR("readC2 fail");
+			FREEP(c2);
 			return err;
 		}
 		return 0;
@@ -169,6 +173,7 @@ namespace RTMP
 		{
 			connection->Send((const uint8_t*)hsBytes->s0s1s2, 3073, nullptr);
 			hsBytes->sendS0s1s2 = true;
+			return 0;
 		}
 
 		if (hsBytes->readC2(connection) != 0)
@@ -177,8 +182,11 @@ namespace RTMP
 			return -1;
 		}
 
-		MS_DEBUG_DEV("RtmpHandshake::HandshakeWithClient Done.");
 		hsBytes->done = true;
+		MS_DEBUG_DEV(
+		  "RtmpHandshake::HandshakeWithClient Done. \n Peer:%s:%d",
+		  connection->GetPeerIp().c_str(),
+		  connection->GetPeerPort());
 		return 0;
 	}
 } // namespace RTMP

@@ -161,6 +161,7 @@ common_sources = [
   'src/RTC/RTCP/XrDelaySinceLastRr.cpp',
   'src/RTC/RTCP/XrReceiverReferenceTime.cpp',
   'src/RTMP/RtmpHandshake.cpp',
+  'src/RTMP/RtmpMessage.cpp',
   'src/RTMP/RtmpServer.cpp',
   'src/RTMP/RtmpTcpConnection.cpp',
   'src/RTMP/RtmpTcpServer.cpp',

@@ -3,22 +3,20 @@
 
 #include "RTMP/RtmpTcpServer.hpp"
 #include "Logger.hpp"
+#include "RTMP/RtmpTransport.hpp"
 #include "RTC/PortManager.hpp"
 
 namespace RTMP
 {
-	RtmpTcpServer::RtmpTcpServer(
-	  Listener* listener, RTMP::RtmpTcpConnection::Listener* connListener, std::string& ip)
-	  : RTMP::RtmpTcpServer(listener, connListener, ip, 1935)
+	RtmpTcpServer::RtmpTcpServer(Listener* listener, std::string& ip)
+	  : RTMP::RtmpTcpServer(listener, ip, 1935)
 	{
 		MS_TRACE();
 	}
 
-	RtmpTcpServer::RtmpTcpServer(
-	  Listener* listener, RTMP::RtmpTcpConnection::Listener* connListener, std::string& ip, uint16_t port)
+	RtmpTcpServer::RtmpTcpServer(Listener* Listener, std::string& ip, uint16_t port)
 	  : // This may throw.
-	    ::TcpServerHandler::TcpServerHandler(RTC::PortManager::BindTcp(ip, port)), listener(listener),
-	    connListener(connListener)
+	    ::TcpServerHandler::TcpServerHandler(RTC::PortManager::BindTcp(ip, port)), listener(listener)
 	{
 		MS_TRACE();
 		MS_DEBUG_DEV("RtmpTcpServer constructor with ip:%s port:%d", ip.c_str(), port);
@@ -34,11 +32,10 @@ namespace RTMP
 		MS_TRACE();
 
 		// Allocate a new RTMP::RtmpTcpConnection for the RtmpTcpServer to handle it.
-		auto* connection = new RTMP::RtmpTcpConnection(
-		  this->connListener, 65536); //[dming] TODO:应该与rtc对应，创建的是RtmpTransport. 叉掉
+		auto transport = new RTMP::RtmpTransport(); // [dming] transport 应该回调给listener
 
 		// Accept it.
-		AcceptTcpConnection(connection);
+		AcceptTcpConnection(transport->GetConnection());
 	}
 
 	void RtmpTcpServer::UserOnTcpConnectionClosed(::TcpConnectionHandler* connection)

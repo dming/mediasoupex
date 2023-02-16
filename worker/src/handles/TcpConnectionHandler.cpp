@@ -9,7 +9,7 @@
 #include <cstring> // std::memcpy()
 
 /* Static methods for UV callbacks. */
-
+// [dming] 每次uv__read时都会先调用alloc_cb，再调用read_cb
 inline static void onAlloc(uv_handle_t* handle, size_t suggestedSize, uv_buf_t* buf)
 {
 	auto* connection = static_cast<TcpConnectionHandler*>(handle->data);
