@@ -3,8 +3,10 @@
 #define MS_RTMP_SERVER_HPP
 
 #include "RTMP/RtmpTcpServer.hpp"
-#include "RTMP/RtmpTransportManager.hpp"
+#include "RTMP/RtmpTransport.hpp"
 #include "RTC/Shared.hpp"
+#include <map>
+#include <stdint.h>
 #include <string>
 
 namespace RTMP
@@ -29,6 +31,7 @@ namespace RTMP
 	public:
 		void OnRtcTcpConnectionClosed(
 		  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTcpConnection* connection) override;
+		void OnRtmpTransportCreated(RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTransport* transport) override;
 
 	public:
 		// Passed by argument.
@@ -38,8 +41,7 @@ namespace RTMP
 		// Passed by argument.
 		RTC::Shared* shared{ nullptr };
 		RTMP::RtmpTcpServer* tcpServer;
-		// 管理rtmp 链接，一个链接对应一个streamUrl以及链路. RtmpTransportManager
-		//  RTMP::RtmpTransportManager transportManager;
+		std::map<uint64_t, RTMP::RtmpTransport*> transports_;
 	};
 } // namespace RTMP
 #endif

@@ -130,7 +130,7 @@ namespace RTMP
 		MS_DEBUG_DEV("create payload for RTMP message. size=%d", size);
 	}
 
-	int RtmpCommonMessage::create(RtmpMessageHeader* pheader, char* body, int size)
+	srs_error_t RtmpCommonMessage::create(RtmpMessageHeader* pheader, char* body, int size)
 	{
 		// drop previous payload.
 		FREEA(payload);
@@ -139,7 +139,7 @@ namespace RTMP
 		this->payload = body;
 		this->size    = size;
 
-		return 0;
+		return srs_success;
 	}
 
 	// RtmpChunkStream

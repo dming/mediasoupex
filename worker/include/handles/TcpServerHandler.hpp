@@ -63,12 +63,12 @@ protected:
 	struct sockaddr_storage localAddr;
 	std::string localIp;
 	uint16_t localPort{ 0u };
+	absl::flat_hash_set<TcpConnectionHandler*> connections;
 
 private:
 	// Allocated by this (may be passed by argument).
 	uv_tcp_t* uvHandle{ nullptr };
 	// Others.
-	absl::flat_hash_set<TcpConnectionHandler*> connections;
 	bool closed{ false };
 };
 

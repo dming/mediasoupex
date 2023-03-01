@@ -10,3 +10,9 @@
 #define SRS_CONSTS_RTMP_SRS_CHUNK_SIZE 60000
 // 6. Chunking, RTMP protocol default chunk size.
 #define SRS_CONSTS_RTMP_PROTOCOL_CHUNK_SIZE 128
+
+///////////////////////////////////////////////////////////
+// RTMP consts values
+///////////////////////////////////////////////////////////
+#define SRS_CONSTS_RTMP_SET_DATAFRAME "@setDataFrame"
+#define SRS_CONSTS_RTMP_ON_METADATA "onMetaData"

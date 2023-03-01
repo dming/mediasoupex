@@ -53,10 +53,12 @@ common_sources = [
   'src/Settings.cpp',
   'src/Worker.cpp',
   'src/ChannelMessageRegistrator.cpp',
+  'src/CplxError.cpp',
   'src/Utils/Crypto.cpp',
   'src/Utils/File.cpp',
   'src/Utils/IP.cpp',
   'src/Utils/String.cpp',
+  'src/Utils/UtilsBuffer.cpp',
   'src/handles/SignalsHandler.cpp',
   'src/handles/TcpConnectionHandler.cpp',
   'src/handles/TcpServerHandler.cpp',
@@ -160,8 +162,14 @@ common_sources = [
   'src/RTC/RTCP/XR.cpp',
   'src/RTC/RTCP/XrDelaySinceLastRr.cpp',
   'src/RTC/RTCP/XrReceiverReferenceTime.cpp',
+  'src/RTMP/RtmpAmf0.cpp',
   'src/RTMP/RtmpHandshake.cpp',
+  'src/RTMP/RtmpJson.cpp',
   'src/RTMP/RtmpMessage.cpp',
+  'src/RTMP/RtmpPacket.cpp',
+  'src/RTMP/RtmpHttp.cpp',
+  'src/RTMP/RtmpUtility.cpp',
+  'src/RTMP/RtmpProtocol.cpp',
   'src/RTMP/RtmpServer.cpp',
   'src/RTMP/RtmpTcpConnection.cpp',
   'src/RTMP/RtmpTcpServer.cpp',
@@ -221,6 +229,7 @@ catch2_proj = subproject(
 )
 libwebrtc_include_directories = include_directories('include')
 subdir('deps/libwebrtc')
+subdir('deps/http-parser')
 
 dependencies = [
   abseil_cpp_proj.get_variable('absl_container_dep'),
@@ -230,6 +239,7 @@ dependencies = [
   libsrtp2_proj.get_variable('libsrtp2_dep'),
   usrsctp_proj.get_variable('usrsctp_dep'),
   libwebrtc_dep,
+  libhttpparser_dep,
 ]
 
 link_whole = [
@@ -240,6 +250,7 @@ link_whole = [
   libsrtp2_proj.get_variable('libsrtp2'),
   usrsctp_proj.get_variable('usrsctp'),
   libwebrtc,
+  libhttpparser,
 ]
 
 if host_machine.system() == 'windows'

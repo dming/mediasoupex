@@ -8,6 +8,7 @@
 #ifndef MS_RTMP_TRANSPORT_HPP
 #define MS_RTMP_TRANSPORT_HPP
 
+#include "RTMP/RtmpProtocol.hpp"
 #include "RTMP/RtmpTcpConnection.hpp"
 #include "RTC/TransportTuple.hpp"
 namespace RTMP
@@ -32,13 +33,22 @@ namespace RTMP
 		  RTMP::RtmpTcpConnection* connection, RtmpCommonMessage* msg) override;
 
 	public:
-		RtmpTcpConnection* GetConnection();
+		RtmpTcpConnection* GetConnection()
+		{
+			return connection;
+		}
 
 	private:
-		void OnRecvMessage(RTC::TransportTuple* tuple, RtmpCommonMessage* msg);
+		srs_error_t OnRecvMessage(RTC::TransportTuple* tuple, RtmpCommonMessage* msg);
+		// handle Packet Functions
+		srs_error_t HandleRtmpConnectAppPacket(RtmpConnectAppPacket* packet);
 
 	private:
 		RtmpTcpConnection* connection;
+		RtmpProtocol* protocol;
+		// TODO: 增加SrsClientInfo保存客户端信息
+		// About the rtmp client.
+		RtmpClientInfo* info;
 	};
 } // namespace RTMP
 #endif

@@ -3,6 +3,7 @@
 
 #include "common.hpp"
 #include "Rtmp/RtmpTcpConnection.hpp"
+#include "Rtmp/RtmpTransport.hpp"
 #include "handles/TcpConnectionHandler.hpp"
 #include "handles/TcpServerHandler.hpp"
 #include <string>
@@ -21,6 +22,8 @@ namespace RTMP
 		public:
 			virtual void OnRtcTcpConnectionClosed(
 			  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTcpConnection* connection) = 0;
+			virtual void OnRtmpTransportCreated(
+			  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTransport* transport) = 0;
 		};
 
 	public:

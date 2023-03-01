@@ -459,7 +459,7 @@ namespace RTMP
 		size_t dataLen = this->bufferDataLen - this->frameStart;
 		if (mhSize > 0 && dataLen < bhLen + mhSize)
 		{
-			MS_ERROR("cannot read %" PRIu64 " bytes message header", bhLen + mhSize);
+			MS_ERROR("cannot read %" PRId32 " bytes message header", bhLen + mhSize);
 			return -1;
 		}
 
@@ -490,7 +490,7 @@ namespace RTMP
 				mhSize += 4;
 				if (dataLen < bhLen + mhSize)
 				{
-					MS_ERROR("cannot read %" PRIu64 " bytes message header", bhLen + mhSize);
+					MS_ERROR("cannot read %" PRId32 " bytes message header", bhLen + mhSize);
 					goto NOT_ENOUGH_DATA;
 				}
 			}
@@ -504,7 +504,7 @@ namespace RTMP
 			if (payloadSize > 0 && dataLen < bhLen + mhSize + payloadSize)
 			{
 				MS_ERROR(
-				  "fmt=%d, cannot read %d bytes message header, and %d bytes payload size, only has %" PRIu32,
+				  "fmt=%d, cannot read %d bytes message header, and %d bytes payload size, only has %" PRIu64,
 				  fmt,
 				  bhLen + mhSize,
 				  payloadLen - chunk->msg->size,
@@ -587,7 +587,7 @@ namespace RTMP
 			if (payloadSize > 0 && dataLen < (bhLen + mhSize + payloadSize))
 			{
 				MS_ERROR(
-				  "fmt=%d, cannot read %d bytes message header, and %d bytes payload size, only %" PRIu32,
+				  "fmt=%d, cannot read %d bytes message header, and %d bytes payload size, only %" PRIu64,
 				  fmt,
 				  bhLen + mhSize,
 				  payloadLen - chunk->msg->size,
@@ -683,6 +683,13 @@ namespace RTMP
 		return 0;
 
 	NOT_ENOUGH_DATA:
+		if (chunk->msg && chunk->msg->size == 0)
+		{
+			MS_DEBUG_DEV("delete chunk->msg");
+			delete chunk->msg;
+			chunk->msg = nullptr;
+		}
+
 		// Check if the buffer is full.
 		if (this->bufferDataLen == this->bufferSize)
 		{

@@ -5,6 +5,7 @@
 #include "Logger.hpp"
 #include "MediaSoupErrors.hpp"
 #include "Utils.hpp"
+#include "RTC/TransportTuple.hpp"
 
 namespace RTMP
 {
@@ -74,10 +75,38 @@ namespace RTMP
 		MS_TRACE();
 	}
 
-	void RtmpServer::OnRtcTcpConnectionClosed(
+	inline void RtmpServer::OnRtcTcpConnectionClosed(
 	  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTcpConnection* connection)
 	{
 		MS_TRACE();
+		RTC::TransportTuple tuple(connection);
+		std::map<uint64_t, RTMP::RtmpTransport*>::iterator transportIt = transports_.find(tuple.hash);
+		if (transportIt != transports_.end())
+		{
+			transports_.erase(transportIt);
+			FREEP(transportIt->second);
+			// [dming] TODO: need erase the transport in router
+		}
+	}
+
+	inline void RtmpServer::OnRtmpTransportCreated(
+	  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTransport* transport)
+	{
+		MS_TRACE();
+		MS_DEBUG_DEV("OnRtmpTransportCreated ");
+		RTMP::RtmpTcpConnection* connection = transport->GetConnection();
+		MS_ASSERT(connection != nullptr, "transport should has connection");
+		RTC::TransportTuple tuple(connection);
+
+		MS_ASSERT(
+		  transports_.find(tuple.hash) == transports_.end(),
+		  "cannot dumplicate create RtmpTransport: [local:%s :%" PRIu16 ", remote:%s :%" PRIu16 "]",
+		  connection->GetLocalIp().c_str(),
+		  connection->GetLocalPort(),
+		  connection->GetPeerIp().c_str(),
+		  connection->GetPeerPort());
+
+		transports_[tuple.hash] = transport;
 	}
 
 } // namespace RTMP

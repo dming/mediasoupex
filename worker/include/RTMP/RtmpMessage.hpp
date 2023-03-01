@@ -100,6 +100,7 @@
 // 0xffffff and the extended timestamp MUST be sent.
 #define RTMP_EXTENDED_TIMESTAMP 0xFFFFFF
 
+#include "CplxError.hpp"
 #include <stdint.h>
 namespace RTMP
 {
@@ -199,7 +200,7 @@ namespace RTMP
 		// from the header and body.
 		// @remark user should never free the body.
 		// @param pheader, the header to copy to the message. NULL to ignore.
-		virtual int create(RtmpMessageHeader* pheader, char* body, int size);
+		virtual srs_error_t create(RtmpMessageHeader* pheader, char* body, int size);
 	};
 
 	// incoming chunk stream maybe interlaced,
