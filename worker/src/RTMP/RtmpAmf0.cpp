@@ -34,136 +34,136 @@ namespace RTMP
 {
 	using namespace srs_internal;
 
-	SrsAmf0Any::SrsAmf0Any()
+	RtmpAmf0Any::RtmpAmf0Any()
 	{
 		marker = RTMP_AMF0_Invalid;
 	}
 
-	SrsAmf0Any::~SrsAmf0Any()
+	RtmpAmf0Any::~RtmpAmf0Any()
 	{
 	}
 
-	bool SrsAmf0Any::is_string()
+	bool RtmpAmf0Any::is_string()
 	{
 		return marker == RTMP_AMF0_String;
 	}
 
-	bool SrsAmf0Any::is_boolean()
+	bool RtmpAmf0Any::is_boolean()
 	{
 		return marker == RTMP_AMF0_Boolean;
 	}
 
-	bool SrsAmf0Any::is_number()
+	bool RtmpAmf0Any::is_number()
 	{
 		return marker == RTMP_AMF0_Number;
 	}
 
-	bool SrsAmf0Any::is_null()
+	bool RtmpAmf0Any::is_null()
 	{
 		return marker == RTMP_AMF0_Null;
 	}
 
-	bool SrsAmf0Any::is_undefined()
+	bool RtmpAmf0Any::is_undefined()
 	{
 		return marker == RTMP_AMF0_Undefined;
 	}
 
-	bool SrsAmf0Any::is_object()
+	bool RtmpAmf0Any::is_object()
 	{
 		return marker == RTMP_AMF0_Object;
 	}
 
-	bool SrsAmf0Any::is_ecma_array()
+	bool RtmpAmf0Any::is_ecma_array()
 	{
 		return marker == RTMP_AMF0_EcmaArray;
 	}
 
-	bool SrsAmf0Any::is_strict_array()
+	bool RtmpAmf0Any::is_strict_array()
 	{
 		return marker == RTMP_AMF0_StrictArray;
 	}
 
-	bool SrsAmf0Any::is_date()
+	bool RtmpAmf0Any::is_date()
 	{
 		return marker == RTMP_AMF0_Date;
 	}
 
-	bool SrsAmf0Any::is_complex_object()
+	bool RtmpAmf0Any::is_complex_object()
 	{
 		return is_object() || is_object_eof() || is_ecma_array() || is_strict_array();
 	}
 
-	std::string SrsAmf0Any::to_str()
+	std::string RtmpAmf0Any::to_str()
 	{
-		SrsAmf0String* p = dynamic_cast<SrsAmf0String*>(this);
+		RtmpAmf0String* p = dynamic_cast<RtmpAmf0String*>(this);
 		srs_assert(p != NULL);
 		return p->value;
 	}
 
-	const char* SrsAmf0Any::to_str_raw()
+	const char* RtmpAmf0Any::to_str_raw()
 	{
-		SrsAmf0String* p = dynamic_cast<SrsAmf0String*>(this);
+		RtmpAmf0String* p = dynamic_cast<RtmpAmf0String*>(this);
 		srs_assert(p != NULL);
 		return p->value.data();
 	}
 
-	bool SrsAmf0Any::to_boolean()
+	bool RtmpAmf0Any::to_boolean()
 	{
-		SrsAmf0Boolean* p = dynamic_cast<SrsAmf0Boolean*>(this);
+		RtmpAmf0Boolean* p = dynamic_cast<RtmpAmf0Boolean*>(this);
 		srs_assert(p != NULL);
 		return p->value;
 	}
 
-	double SrsAmf0Any::to_number()
+	double RtmpAmf0Any::to_number()
 	{
-		SrsAmf0Number* p = dynamic_cast<SrsAmf0Number*>(this);
+		RtmpAmf0Number* p = dynamic_cast<RtmpAmf0Number*>(this);
 		srs_assert(p != NULL);
 		return p->value;
 	}
 
-	int64_t SrsAmf0Any::to_date()
+	int64_t RtmpAmf0Any::to_date()
 	{
-		SrsAmf0Date* p = dynamic_cast<SrsAmf0Date*>(this);
+		RtmpAmf0Date* p = dynamic_cast<RtmpAmf0Date*>(this);
 		srs_assert(p != NULL);
 		return p->date();
 	}
 
-	int16_t SrsAmf0Any::to_date_time_zone()
+	int16_t RtmpAmf0Any::to_date_time_zone()
 	{
-		SrsAmf0Date* p = dynamic_cast<SrsAmf0Date*>(this);
+		RtmpAmf0Date* p = dynamic_cast<RtmpAmf0Date*>(this);
 		srs_assert(p != NULL);
 		return p->time_zone();
 	}
 
-	SrsAmf0Object* SrsAmf0Any::to_object()
+	RtmpAmf0Object* RtmpAmf0Any::to_object()
 	{
-		SrsAmf0Object* p = dynamic_cast<SrsAmf0Object*>(this);
+		RtmpAmf0Object* p = dynamic_cast<RtmpAmf0Object*>(this);
 		srs_assert(p != NULL);
 		return p;
 	}
 
-	SrsAmf0EcmaArray* SrsAmf0Any::to_ecma_array()
+	RtmpAmf0EcmaArray* RtmpAmf0Any::to_ecma_array()
 	{
-		SrsAmf0EcmaArray* p = dynamic_cast<SrsAmf0EcmaArray*>(this);
+		RtmpAmf0EcmaArray* p = dynamic_cast<RtmpAmf0EcmaArray*>(this);
 		srs_assert(p != NULL);
 		return p;
 	}
 
-	SrsAmf0StrictArray* SrsAmf0Any::to_strict_array()
+	RtmpAmf0StrictArray* RtmpAmf0Any::to_strict_array()
 	{
-		SrsAmf0StrictArray* p = dynamic_cast<SrsAmf0StrictArray*>(this);
+		RtmpAmf0StrictArray* p = dynamic_cast<RtmpAmf0StrictArray*>(this);
 		srs_assert(p != NULL);
 		return p;
 	}
 
-	void SrsAmf0Any::set_number(double value)
+	void RtmpAmf0Any::set_number(double value)
 	{
-		SrsAmf0Number* p = dynamic_cast<SrsAmf0Number*>(this);
+		RtmpAmf0Number* p = dynamic_cast<RtmpAmf0Number*>(this);
 		srs_assert(p != NULL);
 		p->value = value;
 	}
 
-	bool SrsAmf0Any::is_object_eof()
+	bool RtmpAmf0Any::is_object_eof()
 	{
 		return marker == RTMP_AMF0_ObjectEnd;
 	}
@@ -175,7 +175,7 @@ namespace RTMP
 			ss << "    ";
 		}
 	}
-	void srs_amf0_do_print(SrsAmf0Any* any, std::stringstream& ss, int level)
+	void srs_amf0_do_print(RtmpAmf0Any* any, std::stringstream& ss, int level)
 	{
 		std::ios_base::fmtflags oflags = ss.flags();
 
@@ -206,7 +206,7 @@ namespace RTMP
 		}
 		else if (any->is_ecma_array())
 		{
-			SrsAmf0EcmaArray* obj = any->to_ecma_array();
+			RtmpAmf0EcmaArray* obj = any->to_ecma_array();
 			ss << "EcmaArray "
 			   << "(" << obj->count() << " items)" << std::endl;
 			for (int i = 0; i < obj->count(); i++)
@@ -225,7 +225,7 @@ namespace RTMP
 		}
 		else if (any->is_strict_array())
 		{
-			SrsAmf0StrictArray* obj = any->to_strict_array();
+			RtmpAmf0StrictArray* obj = any->to_strict_array();
 			ss << "StrictArray "
 			   << "(" << obj->count() << " items)" << std::endl;
 			for (int i = 0; i < obj->count(); i++)
@@ -244,7 +244,7 @@ namespace RTMP
 		}
 		else if (any->is_object())
 		{
-			SrsAmf0Object* obj = any->to_object();
+			RtmpAmf0Object* obj = any->to_object();
 			ss << "Object "
 			   << "(" << obj->count() << " items)" << std::endl;
 			for (int i = 0; i < obj->count(); i++)
@@ -269,7 +269,7 @@ namespace RTMP
 		ss.flags(oflags);
 	}
 
-	char* SrsAmf0Any::human_print(char** pdata, int* psize)
+	char* RtmpAmf0Any::human_print(char** pdata, int* psize)
 	{
 		std::stringstream ss;
 
@@ -299,17 +299,17 @@ namespace RTMP
 		return data;
 	}
 
-	SrsJsonAny* SrsAmf0Any::to_json()
+	RtmpJsonAny* RtmpAmf0Any::to_json()
 	{
 		switch (marker)
 		{
 			case RTMP_AMF0_String:
 			{
-				return SrsJsonAny::str(to_str().c_str());
+				return RtmpJsonAny::str(to_str().c_str());
 			}
 			case RTMP_AMF0_Boolean:
 			{
-				return SrsJsonAny::boolean(to_boolean());
+				return RtmpJsonAny::boolean(to_boolean());
 			}
 			case RTMP_AMF0_Number:
 			{
@@ -317,20 +317,20 @@ namespace RTMP
 				int64_t iv = (int64_t)dv;
 				if (iv == dv)
 				{
-					return SrsJsonAny::integer(iv);
+					return RtmpJsonAny::integer(iv);
 				}
 				else
 				{
-					return SrsJsonAny::number(dv);
+					return RtmpJsonAny::number(dv);
 				}
 			}
 			case RTMP_AMF0_Null:
 			{
-				return SrsJsonAny::null();
+				return RtmpJsonAny::null();
 			}
 			case RTMP_AMF0_Undefined:
 			{
-				return SrsJsonAny::null();
+				return RtmpJsonAny::null();
 			}
 			case RTMP_AMF0_Object:
 			{
@@ -350,73 +350,73 @@ namespace RTMP
 			case RTMP_AMF0_Date:
 			{
 				// TODO: FIXME: implements it.
-				return SrsJsonAny::null();
+				return RtmpJsonAny::null();
 			}
 			default:
 			{
-				return SrsJsonAny::null();
+				return RtmpJsonAny::null();
 			}
 		}
 	}
 
-	SrsAmf0Any* SrsAmf0Any::str(const char* value)
+	RtmpAmf0Any* RtmpAmf0Any::str(const char* value)
 	{
-		return new SrsAmf0String(value);
+		return new RtmpAmf0String(value);
 	}
 
-	SrsAmf0Any* SrsAmf0Any::boolean(bool value)
+	RtmpAmf0Any* RtmpAmf0Any::boolean(bool value)
 	{
-		return new SrsAmf0Boolean(value);
+		return new RtmpAmf0Boolean(value);
 	}
 
-	SrsAmf0Any* SrsAmf0Any::number(double value)
+	RtmpAmf0Any* RtmpAmf0Any::number(double value)
 	{
-		return new SrsAmf0Number(value);
+		return new RtmpAmf0Number(value);
 	}
 
-	SrsAmf0Any* SrsAmf0Any::null()
+	RtmpAmf0Any* RtmpAmf0Any::null()
 	{
-		return new SrsAmf0Null();
+		return new RtmpAmf0Null();
 	}
 
-	SrsAmf0Any* SrsAmf0Any::undefined()
+	RtmpAmf0Any* RtmpAmf0Any::undefined()
 	{
-		return new SrsAmf0Undefined();
+		return new RtmpAmf0Undefined();
 	}
 
-	SrsAmf0Object* SrsAmf0Any::object()
+	RtmpAmf0Object* RtmpAmf0Any::object()
 	{
-		return new SrsAmf0Object();
+		return new RtmpAmf0Object();
 	}
 
-	SrsAmf0Any* SrsAmf0Any::object_eof()
+	RtmpAmf0Any* RtmpAmf0Any::object_eof()
 	{
-		return new SrsAmf0ObjectEOF();
+		return new RtmpAmf0ObjectEOF();
 	}
 
-	SrsAmf0EcmaArray* SrsAmf0Any::ecma_array()
+	RtmpAmf0EcmaArray* RtmpAmf0Any::ecma_array()
 	{
-		return new SrsAmf0EcmaArray();
+		return new RtmpAmf0EcmaArray();
 	}
 
-	SrsAmf0StrictArray* SrsAmf0Any::strict_array()
+	RtmpAmf0StrictArray* RtmpAmf0Any::strict_array()
 	{
-		return new SrsAmf0StrictArray();
+		return new RtmpAmf0StrictArray();
 	}
 
-	SrsAmf0Any* SrsAmf0Any::date(int64_t value)
+	RtmpAmf0Any* RtmpAmf0Any::date(int64_t value)
 	{
-		return new SrsAmf0Date(value);
+		return new RtmpAmf0Date(value);
 	}
 
-	srs_error_t SrsAmf0Any::discovery(Utils::RtmpBuffer* stream, SrsAmf0Any** ppvalue)
+	srs_error_t RtmpAmf0Any::discovery(Utils::RtmpBuffer* stream, RtmpAmf0Any** ppvalue)
 	{
 		srs_error_t err = srs_success;
 
 		// detect the object-eof specially
 		if (srs_amf0_is_object_eof(stream))
 		{
-			*ppvalue = new SrsAmf0ObjectEOF();
+			*ppvalue = new RtmpAmf0ObjectEOF();
 			return err;
 		}
 
@@ -435,47 +435,47 @@ namespace RTMP
 		{
 			case RTMP_AMF0_String:
 			{
-				*ppvalue = SrsAmf0Any::str();
+				*ppvalue = RtmpAmf0Any::str();
 				return err;
 			}
 			case RTMP_AMF0_Boolean:
 			{
-				*ppvalue = SrsAmf0Any::boolean();
+				*ppvalue = RtmpAmf0Any::boolean();
 				return err;
 			}
 			case RTMP_AMF0_Number:
 			{
-				*ppvalue = SrsAmf0Any::number();
+				*ppvalue = RtmpAmf0Any::number();
 				return err;
 			}
 			case RTMP_AMF0_Null:
 			{
-				*ppvalue = SrsAmf0Any::null();
+				*ppvalue = RtmpAmf0Any::null();
 				return err;
 			}
 			case RTMP_AMF0_Undefined:
 			{
-				*ppvalue = SrsAmf0Any::undefined();
+				*ppvalue = RtmpAmf0Any::undefined();
 				return err;
 			}
 			case RTMP_AMF0_Object:
 			{
-				*ppvalue = SrsAmf0Any::object();
+				*ppvalue = RtmpAmf0Any::object();
 				return err;
 			}
 			case RTMP_AMF0_EcmaArray:
 			{
-				*ppvalue = SrsAmf0Any::ecma_array();
+				*ppvalue = RtmpAmf0Any::ecma_array();
 				return err;
 			}
 			case RTMP_AMF0_StrictArray:
 			{
-				*ppvalue = SrsAmf0Any::strict_array();
+				*ppvalue = RtmpAmf0Any::strict_array();
 				return err;
 			}
 			case RTMP_AMF0_Date:
 			{
-				*ppvalue = SrsAmf0Any::date();
+				*ppvalue = RtmpAmf0Any::date();
 				return err;
 			}
 			case RTMP_AMF0_Invalid:
@@ -486,62 +486,62 @@ namespace RTMP
 		}
 	}
 
-	SrsUnSortedHashtable::SrsUnSortedHashtable()
+	RtmpUnSortedHashtable::RtmpUnSortedHashtable()
 	{
 	}
 
-	SrsUnSortedHashtable::~SrsUnSortedHashtable()
+	RtmpUnSortedHashtable::~RtmpUnSortedHashtable()
 	{
 		clear();
 	}
 
-	int SrsUnSortedHashtable::count()
+	int RtmpUnSortedHashtable::count()
 	{
 		return (int)properties.size();
 	}
 
-	void SrsUnSortedHashtable::clear()
+	void RtmpUnSortedHashtable::clear()
 	{
-		std::vector<SrsAmf0ObjectPropertyType>::iterator it;
+		std::vector<RtmpAmf0ObjectPropertyType>::iterator it;
 		for (it = properties.begin(); it != properties.end(); ++it)
 		{
-			SrsAmf0ObjectPropertyType& elem = *it;
-			SrsAmf0Any* any                 = elem.second;
+			RtmpAmf0ObjectPropertyType& elem = *it;
+			RtmpAmf0Any* any                 = elem.second;
 			FREEP(any);
 		}
 		properties.clear();
 	}
 
-	std::string SrsUnSortedHashtable::key_at(int index)
+	std::string RtmpUnSortedHashtable::key_at(int index)
 	{
 		srs_assert(index < count());
-		SrsAmf0ObjectPropertyType& elem = properties[index];
+		RtmpAmf0ObjectPropertyType& elem = properties[index];
 		return elem.first;
 	}
 
-	const char* SrsUnSortedHashtable::key_raw_at(int index)
+	const char* RtmpUnSortedHashtable::key_raw_at(int index)
 	{
 		srs_assert(index < count());
-		SrsAmf0ObjectPropertyType& elem = properties[index];
+		RtmpAmf0ObjectPropertyType& elem = properties[index];
 		return elem.first.data();
 	}
 
-	SrsAmf0Any* SrsUnSortedHashtable::value_at(int index)
+	RtmpAmf0Any* RtmpUnSortedHashtable::value_at(int index)
 	{
 		srs_assert(index < count());
-		SrsAmf0ObjectPropertyType& elem = properties[index];
+		RtmpAmf0ObjectPropertyType& elem = properties[index];
 		return elem.second;
 	}
 
-	void SrsUnSortedHashtable::set(std::string key, SrsAmf0Any* value)
+	void RtmpUnSortedHashtable::set(std::string key, RtmpAmf0Any* value)
 	{
-		std::vector<SrsAmf0ObjectPropertyType>::iterator it;
+		std::vector<RtmpAmf0ObjectPropertyType>::iterator it;
 
 		for (it = properties.begin(); it != properties.end(); ++it)
 		{
-			SrsAmf0ObjectPropertyType& elem = *it;
-			std::string name                = elem.first;
-			SrsAmf0Any* any                 = elem.second;
+			RtmpAmf0ObjectPropertyType& elem = *it;
+			std::string name                 = elem.first;
+			RtmpAmf0Any* any                 = elem.second;
 
 			if (key == name)
 			{
@@ -557,15 +557,15 @@ namespace RTMP
 		}
 	}
 
-	SrsAmf0Any* SrsUnSortedHashtable::get_property(std::string name)
+	RtmpAmf0Any* RtmpUnSortedHashtable::get_property(std::string name)
 	{
-		std::vector<SrsAmf0ObjectPropertyType>::iterator it;
+		std::vector<RtmpAmf0ObjectPropertyType>::iterator it;
 
 		for (it = properties.begin(); it != properties.end(); ++it)
 		{
-			SrsAmf0ObjectPropertyType& elem = *it;
-			std::string key                 = elem.first;
-			SrsAmf0Any* any                 = elem.second;
+			RtmpAmf0ObjectPropertyType& elem = *it;
+			std::string key                  = elem.first;
+			RtmpAmf0Any* any                 = elem.second;
 			if (key == name)
 			{
 				return any;
@@ -575,9 +575,9 @@ namespace RTMP
 		return NULL;
 	}
 
-	SrsAmf0Any* SrsUnSortedHashtable::ensure_property_string(std::string name)
+	RtmpAmf0Any* RtmpUnSortedHashtable::ensure_property_string(std::string name)
 	{
-		SrsAmf0Any* prop = get_property(name);
+		RtmpAmf0Any* prop = get_property(name);
 
 		if (!prop)
 		{
@@ -592,9 +592,9 @@ namespace RTMP
 		return prop;
 	}
 
-	SrsAmf0Any* SrsUnSortedHashtable::ensure_property_number(std::string name)
+	RtmpAmf0Any* RtmpUnSortedHashtable::ensure_property_number(std::string name)
 	{
-		SrsAmf0Any* prop = get_property(name);
+		RtmpAmf0Any* prop = get_property(name);
 
 		if (!prop)
 		{
@@ -609,14 +609,14 @@ namespace RTMP
 		return prop;
 	}
 
-	void SrsUnSortedHashtable::remove(std::string name)
+	void RtmpUnSortedHashtable::remove(std::string name)
 	{
-		std::vector<SrsAmf0ObjectPropertyType>::iterator it;
+		std::vector<RtmpAmf0ObjectPropertyType>::iterator it;
 
 		for (it = properties.begin(); it != properties.end();)
 		{
-			std::string key = it->first;
-			SrsAmf0Any* any = it->second;
+			std::string key  = it->first;
+			RtmpAmf0Any* any = it->second;
 
 			if (key == name)
 			{
@@ -631,33 +631,33 @@ namespace RTMP
 		}
 	}
 
-	void SrsUnSortedHashtable::copy(SrsUnSortedHashtable* src)
+	void RtmpUnSortedHashtable::copy(RtmpUnSortedHashtable* src)
 	{
-		std::vector<SrsAmf0ObjectPropertyType>::iterator it;
+		std::vector<RtmpAmf0ObjectPropertyType>::iterator it;
 		for (it = src->properties.begin(); it != src->properties.end(); ++it)
 		{
-			SrsAmf0ObjectPropertyType& elem = *it;
-			std::string key                 = elem.first;
-			SrsAmf0Any* any                 = elem.second;
+			RtmpAmf0ObjectPropertyType& elem = *it;
+			std::string key                  = elem.first;
+			RtmpAmf0Any* any                 = elem.second;
 			set(key, any->copy());
 		}
 	}
 
-	SrsAmf0ObjectEOF::SrsAmf0ObjectEOF()
+	RtmpAmf0ObjectEOF::RtmpAmf0ObjectEOF()
 	{
 		marker = RTMP_AMF0_ObjectEnd;
 	}
 
-	SrsAmf0ObjectEOF::~SrsAmf0ObjectEOF()
+	RtmpAmf0ObjectEOF::~RtmpAmf0ObjectEOF()
 	{
 	}
 
-	int SrsAmf0ObjectEOF::total_size()
+	int RtmpAmf0ObjectEOF::total_size()
 	{
-		return SrsAmf0Size::object_eof();
+		return RtmpAmf0Size::object_eof();
 	}
 
-	srs_error_t SrsAmf0ObjectEOF::read(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0ObjectEOF::read(Utils::RtmpBuffer* stream)
 	{
 		srs_error_t err = srs_success;
 
@@ -687,7 +687,7 @@ namespace RTMP
 		return err;
 	}
 
-	srs_error_t SrsAmf0ObjectEOF::write(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0ObjectEOF::write(Utils::RtmpBuffer* stream)
 	{
 		srs_error_t err = srs_success;
 
@@ -709,43 +709,43 @@ namespace RTMP
 		return err;
 	}
 
-	SrsAmf0Any* SrsAmf0ObjectEOF::copy()
+	RtmpAmf0Any* RtmpAmf0ObjectEOF::copy()
 	{
-		return new SrsAmf0ObjectEOF();
+		return new RtmpAmf0ObjectEOF();
 	}
 
-	SrsAmf0Object::SrsAmf0Object()
+	RtmpAmf0Object::RtmpAmf0Object()
 	{
-		properties = new SrsUnSortedHashtable();
-		eof        = new SrsAmf0ObjectEOF();
+		properties = new RtmpUnSortedHashtable();
+		eof        = new RtmpAmf0ObjectEOF();
 		marker     = RTMP_AMF0_Object;
 	}
 
-	SrsAmf0Object::~SrsAmf0Object()
+	RtmpAmf0Object::~RtmpAmf0Object()
 	{
 		FREEP(properties);
 		FREEP(eof);
 	}
 
-	int SrsAmf0Object::total_size()
+	int RtmpAmf0Object::total_size()
 	{
 		int size = 1;
 
 		for (int i = 0; i < properties->count(); i++)
 		{
-			std::string name  = key_at(i);
-			SrsAmf0Any* value = value_at(i);
+			std::string name   = key_at(i);
+			RtmpAmf0Any* value = value_at(i);
 
-			size += SrsAmf0Size::utf8(name);
-			size += SrsAmf0Size::any(value);
+			size += RtmpAmf0Size::utf8(name);
+			size += RtmpAmf0Size::any(value);
 		}
 
-		size += SrsAmf0Size::object_eof();
+		size += RtmpAmf0Size::object_eof();
 
 		return size;
 	}
 
-	srs_error_t SrsAmf0Object::read(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0Object::read(Utils::RtmpBuffer* stream)
 	{
 		srs_error_t err = srs_success;
 
@@ -767,7 +767,7 @@ namespace RTMP
 			// detect whether is eof.
 			if (srs_amf0_is_object_eof(stream))
 			{
-				SrsAmf0ObjectEOF pbj_eof;
+				RtmpAmf0ObjectEOF pbj_eof;
 				if ((err = pbj_eof.read(stream)) != srs_success)
 				{
 					return srs_error_wrap(err, "read EOF");
@@ -782,7 +782,7 @@ namespace RTMP
 				return srs_error_wrap(err, "read property name");
 			}
 			// property-value: any
-			SrsAmf0Any* property_value = NULL;
+			RtmpAmf0Any* property_value = NULL;
 			if ((err = srs_amf0_read_any(stream, &property_value)) != srs_success)
 			{
 				FREEP(property_value);
@@ -796,7 +796,7 @@ namespace RTMP
 		return err;
 	}
 
-	srs_error_t SrsAmf0Object::write(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0Object::write(Utils::RtmpBuffer* stream)
 	{
 		srs_error_t err = srs_success;
 
@@ -812,7 +812,7 @@ namespace RTMP
 		for (int i = 0; i < properties->count(); i++)
 		{
 			std::string name = this->key_at(i);
-			SrsAmf0Any* any  = this->value_at(i);
+			RtmpAmf0Any* any = this->value_at(i);
 
 			if ((err = srs_amf0_write_utf8(stream, name)) != srs_success)
 			{
@@ -833,21 +833,21 @@ namespace RTMP
 		return err;
 	}
 
-	SrsAmf0Any* SrsAmf0Object::copy()
+	RtmpAmf0Any* RtmpAmf0Object::copy()
 	{
-		SrsAmf0Object* copy = new SrsAmf0Object();
+		RtmpAmf0Object* copy = new RtmpAmf0Object();
 		copy->properties->copy(properties);
 		return copy;
 	}
 
-	SrsJsonAny* SrsAmf0Object::to_json()
+	RtmpJsonAny* RtmpAmf0Object::to_json()
 	{
-		SrsJsonObject* obj = SrsJsonAny::object();
+		RtmpJsonObject* obj = RtmpJsonAny::object();
 
 		for (int i = 0; i < properties->count(); i++)
 		{
 			std::string name = this->key_at(i);
-			SrsAmf0Any* any  = this->value_at(i);
+			RtmpAmf0Any* any = this->value_at(i);
 
 			obj->set(name, any->to_json());
 		}
@@ -855,89 +855,89 @@ namespace RTMP
 		return obj;
 	}
 
-	void SrsAmf0Object::clear()
+	void RtmpAmf0Object::clear()
 	{
 		properties->clear();
 	}
 
-	int SrsAmf0Object::count()
+	int RtmpAmf0Object::count()
 	{
 		return properties->count();
 	}
 
-	std::string SrsAmf0Object::key_at(int index)
+	std::string RtmpAmf0Object::key_at(int index)
 	{
 		return properties->key_at(index);
 	}
 
-	const char* SrsAmf0Object::key_raw_at(int index)
+	const char* RtmpAmf0Object::key_raw_at(int index)
 	{
 		return properties->key_raw_at(index);
 	}
 
-	SrsAmf0Any* SrsAmf0Object::value_at(int index)
+	RtmpAmf0Any* RtmpAmf0Object::value_at(int index)
 	{
 		return properties->value_at(index);
 	}
 
-	void SrsAmf0Object::set(std::string key, SrsAmf0Any* value)
+	void RtmpAmf0Object::set(std::string key, RtmpAmf0Any* value)
 	{
 		properties->set(key, value);
 	}
 
-	SrsAmf0Any* SrsAmf0Object::get_property(std::string name)
+	RtmpAmf0Any* RtmpAmf0Object::get_property(std::string name)
 	{
 		return properties->get_property(name);
 	}
 
-	SrsAmf0Any* SrsAmf0Object::ensure_property_string(std::string name)
+	RtmpAmf0Any* RtmpAmf0Object::ensure_property_string(std::string name)
 	{
 		return properties->ensure_property_string(name);
 	}
 
-	SrsAmf0Any* SrsAmf0Object::ensure_property_number(std::string name)
+	RtmpAmf0Any* RtmpAmf0Object::ensure_property_number(std::string name)
 	{
 		return properties->ensure_property_number(name);
 	}
 
-	void SrsAmf0Object::remove(std::string name)
+	void RtmpAmf0Object::remove(std::string name)
 	{
 		properties->remove(name);
 	}
 
-	SrsAmf0EcmaArray::SrsAmf0EcmaArray()
+	RtmpAmf0EcmaArray::RtmpAmf0EcmaArray()
 	{
 		_count     = 0;
-		properties = new SrsUnSortedHashtable();
-		eof        = new SrsAmf0ObjectEOF();
+		properties = new RtmpUnSortedHashtable();
+		eof        = new RtmpAmf0ObjectEOF();
 		marker     = RTMP_AMF0_EcmaArray;
 	}
 
-	SrsAmf0EcmaArray::~SrsAmf0EcmaArray()
+	RtmpAmf0EcmaArray::~RtmpAmf0EcmaArray()
 	{
 		FREEP(properties);
 		FREEP(eof);
 	}
 
-	int SrsAmf0EcmaArray::total_size()
+	int RtmpAmf0EcmaArray::total_size()
 	{
 		int size = 1 + 4;
 
 		for (int i = 0; i < properties->count(); i++)
 		{
-			std::string name  = key_at(i);
-			SrsAmf0Any* value = value_at(i);
+			std::string name   = key_at(i);
+			RtmpAmf0Any* value = value_at(i);
 
-			size += SrsAmf0Size::utf8(name);
-			size += SrsAmf0Size::any(value);
+			size += RtmpAmf0Size::utf8(name);
+			size += RtmpAmf0Size::any(value);
 		}
 
-		size += SrsAmf0Size::object_eof();
+		size += RtmpAmf0Size::object_eof();
 
 		return size;
 	}
 
-	srs_error_t SrsAmf0EcmaArray::read(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0EcmaArray::read(Utils::RtmpBuffer* stream)
 	{
 		srs_error_t err = srs_success;
 
@@ -969,7 +969,7 @@ namespace RTMP
 			// detect whether is eof.
 			if (srs_amf0_is_object_eof(stream))
 			{
-				SrsAmf0ObjectEOF pbj_eof;
+				RtmpAmf0ObjectEOF pbj_eof;
 				if ((err = pbj_eof.read(stream)) != srs_success)
 				{
 					return srs_error_wrap(err, "read EOF");
@@ -984,7 +984,7 @@ namespace RTMP
 				return srs_error_wrap(err, "read property name");
 			}
 			// property-value: any
-			SrsAmf0Any* property_value = NULL;
+			RtmpAmf0Any* property_value = NULL;
 			if ((err = srs_amf0_read_any(stream, &property_value)) != srs_success)
 			{
 				return srs_error_wrap(err, "read property value, name=%s", property_name.c_str());
@@ -997,7 +997,7 @@ namespace RTMP
 		return err;
 	}
 
-	srs_error_t SrsAmf0EcmaArray::write(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0EcmaArray::write(Utils::RtmpBuffer* stream)
 	{
 		srs_error_t err = srs_success;
 
@@ -1021,7 +1021,7 @@ namespace RTMP
 		for (int i = 0; i < properties->count(); i++)
 		{
 			std::string name = this->key_at(i);
-			SrsAmf0Any* any  = this->value_at(i);
+			RtmpAmf0Any* any = this->value_at(i);
 
 			if ((err = srs_amf0_write_utf8(stream, name)) != srs_success)
 			{
@@ -1042,22 +1042,22 @@ namespace RTMP
 		return err;
 	}
 
-	SrsAmf0Any* SrsAmf0EcmaArray::copy()
+	RtmpAmf0Any* RtmpAmf0EcmaArray::copy()
 	{
-		SrsAmf0EcmaArray* copy = new SrsAmf0EcmaArray();
+		RtmpAmf0EcmaArray* copy = new RtmpAmf0EcmaArray();
 		copy->properties->copy(properties);
 		copy->_count = _count;
 		return copy;
 	}
 
-	SrsJsonAny* SrsAmf0EcmaArray::to_json()
+	RtmpJsonAny* RtmpAmf0EcmaArray::to_json()
 	{
-		SrsJsonObject* obj = SrsJsonAny::object();
+		RtmpJsonObject* obj = RtmpJsonAny::object();
 
 		for (int i = 0; i < properties->count(); i++)
 		{
 			std::string name = this->key_at(i);
-			SrsAmf0Any* any  = this->value_at(i);
+			RtmpAmf0Any* any = this->value_at(i);
 
 			obj->set(name, any->to_json());
 		}
@@ -1065,76 +1065,76 @@ namespace RTMP
 		return obj;
 	}
 
-	void SrsAmf0EcmaArray::clear()
+	void RtmpAmf0EcmaArray::clear()
 	{
 		properties->clear();
 	}
 
-	int SrsAmf0EcmaArray::count()
+	int RtmpAmf0EcmaArray::count()
 	{
 		return properties->count();
 	}
 
-	std::string SrsAmf0EcmaArray::key_at(int index)
+	std::string RtmpAmf0EcmaArray::key_at(int index)
 	{
 		return properties->key_at(index);
 	}
 
-	const char* SrsAmf0EcmaArray::key_raw_at(int index)
+	const char* RtmpAmf0EcmaArray::key_raw_at(int index)
 	{
 		return properties->key_raw_at(index);
 	}
 
-	SrsAmf0Any* SrsAmf0EcmaArray::value_at(int index)
+	RtmpAmf0Any* RtmpAmf0EcmaArray::value_at(int index)
 	{
 		return properties->value_at(index);
 	}
 
-	void SrsAmf0EcmaArray::set(std::string key, SrsAmf0Any* value)
+	void RtmpAmf0EcmaArray::set(std::string key, RtmpAmf0Any* value)
 	{
 		properties->set(key, value);
 	}
 
-	SrsAmf0Any* SrsAmf0EcmaArray::get_property(std::string name)
+	RtmpAmf0Any* RtmpAmf0EcmaArray::get_property(std::string name)
 	{
 		return properties->get_property(name);
 	}
 
-	SrsAmf0Any* SrsAmf0EcmaArray::ensure_property_string(std::string name)
+	RtmpAmf0Any* RtmpAmf0EcmaArray::ensure_property_string(std::string name)
 	{
 		return properties->ensure_property_string(name);
 	}
 
-	SrsAmf0Any* SrsAmf0EcmaArray::ensure_property_number(std::string name)
+	RtmpAmf0Any* RtmpAmf0EcmaArray::ensure_property_number(std::string name)
 	{
 		return properties->ensure_property_number(name);
 	}
 
-	SrsAmf0StrictArray::SrsAmf0StrictArray()
+	RtmpAmf0StrictArray::RtmpAmf0StrictArray()
 	{
 		marker = RTMP_AMF0_StrictArray;
 		_count = 0;
 	}
 
-	SrsAmf0StrictArray::~SrsAmf0StrictArray()
+	RtmpAmf0StrictArray::~RtmpAmf0StrictArray()
 	{
 		clear();
 	}
 
-	int SrsAmf0StrictArray::total_size()
+	int RtmpAmf0StrictArray::total_size()
 	{
 		int size = 1 + 4;
 
 		for (int i = 0; i < (int)properties.size(); i++)
 		{
-			SrsAmf0Any* any = properties[i];
+			RtmpAmf0Any* any = properties[i];
 			size += any->total_size();
 		}
 
 		return size;
 	}
 
-	srs_error_t SrsAmf0StrictArray::read(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0StrictArray::read(Utils::RtmpBuffer* stream)
 	{
 		srs_error_t err = srs_success;
 
@@ -1164,7 +1164,7 @@ namespace RTMP
 		for (int i = 0; i < count && !stream->empty(); i++)
 		{
 			// property-value: any
-			SrsAmf0Any* elem = NULL;
+			RtmpAmf0Any* elem = NULL;
 			if ((err = srs_amf0_read_any(stream, &elem)) != srs_success)
 			{
 				return srs_error_wrap(err, "read property");
@@ -1177,7 +1177,7 @@ namespace RTMP
 		return err;
 	}
 
-	srs_error_t SrsAmf0StrictArray::write(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0StrictArray::write(Utils::RtmpBuffer* stream)
 	{
 		srs_error_t err = srs_success;
 
@@ -1200,7 +1200,7 @@ namespace RTMP
 		// value
 		for (int i = 0; i < (int)properties.size(); i++)
 		{
-			SrsAmf0Any* any = properties[i];
+			RtmpAmf0Any* any = properties[i];
 
 			if ((err = srs_amf0_write_any(stream, any)) != srs_success)
 			{
@@ -1211,14 +1211,14 @@ namespace RTMP
 		return err;
 	}
 
-	SrsAmf0Any* SrsAmf0StrictArray::copy()
+	RtmpAmf0Any* RtmpAmf0StrictArray::copy()
 	{
-		SrsAmf0StrictArray* copy = new SrsAmf0StrictArray();
+		RtmpAmf0StrictArray* copy = new RtmpAmf0StrictArray();
 
-		std::vector<SrsAmf0Any*>::iterator it;
+		std::vector<RtmpAmf0Any*>::iterator it;
 		for (it = properties.begin(); it != properties.end(); ++it)
 		{
-			SrsAmf0Any* any = *it;
+			RtmpAmf0Any* any = *it;
 			copy->append(any->copy());
 		}
 
@@ -1226,13 +1226,13 @@ namespace RTMP
 		return copy;
 	}
 
-	SrsJsonAny* SrsAmf0StrictArray::to_json()
+	RtmpJsonAny* RtmpAmf0StrictArray::to_json()
 	{
-		SrsJsonArray* arr = SrsJsonAny::array();
+		RtmpJsonArray* arr = RtmpJsonAny::array();
 
 		for (int i = 0; i < (int)properties.size(); i++)
 		{
-			SrsAmf0Any* any = properties[i];
+			RtmpAmf0Any* any = properties[i];
 
 			arr->append(any->to_json());
 		}
@@ -1240,70 +1240,70 @@ namespace RTMP
 		return arr;
 	}
 
-	void SrsAmf0StrictArray::clear()
+	void RtmpAmf0StrictArray::clear()
 	{
-		std::vector<SrsAmf0Any*>::iterator it;
+		std::vector<RtmpAmf0Any*>::iterator it;
 		for (it = properties.begin(); it != properties.end(); ++it)
 		{
-			SrsAmf0Any* any = *it;
+			RtmpAmf0Any* any = *it;
 			FREEP(any);
 		}
 		properties.clear();
 	}
 
-	int SrsAmf0StrictArray::count()
+	int RtmpAmf0StrictArray::count()
 	{
 		return (int)properties.size();
 	}
 
-	SrsAmf0Any* SrsAmf0StrictArray::at(int index)
+	RtmpAmf0Any* RtmpAmf0StrictArray::at(int index)
 	{
 		srs_assert(index < (int)properties.size());
 		return properties.at(index);
 	}
 
-	void SrsAmf0StrictArray::append(SrsAmf0Any* any)
+	void RtmpAmf0StrictArray::append(RtmpAmf0Any* any)
 	{
 		properties.push_back(any);
 		_count = (int32_t)properties.size();
 	}
 
-	int SrsAmf0Size::utf8(std::string value)
+	int RtmpAmf0Size::utf8(std::string value)
 	{
 		return (int)(2 + value.length());
 	}
 
-	int SrsAmf0Size::str(std::string value)
+	int RtmpAmf0Size::str(std::string value)
 	{
-		return 1 + SrsAmf0Size::utf8(value);
+		return 1 + RtmpAmf0Size::utf8(value);
 	}
 
-	int SrsAmf0Size::number()
+	int RtmpAmf0Size::number()
 	{
 		return 1 + 8;
 	}
 
-	int SrsAmf0Size::date()
+	int RtmpAmf0Size::date()
 	{
 		return 1 + 8 + 2;
 	}
 
-	int SrsAmf0Size::null()
+	int RtmpAmf0Size::null()
 	{
 		return 1;
 	}
 
-	int SrsAmf0Size::undefined()
+	int RtmpAmf0Size::undefined()
 	{
 		return 1;
 	}
 
-	int SrsAmf0Size::boolean()
+	int RtmpAmf0Size::boolean()
 	{
 		return 1 + 1;
 	}
 
-	int SrsAmf0Size::object(SrsAmf0Object* obj)
+	int RtmpAmf0Size::object(RtmpAmf0Object* obj)
 	{
 		if (!obj)
 		{
@@ -1313,12 +1313,12 @@ namespace RTMP
 		return obj->total_size();
 	}
 
-	int SrsAmf0Size::object_eof()
+	int RtmpAmf0Size::object_eof()
 	{
 		return 2 + 1;
 	}
 
-	int SrsAmf0Size::ecma_array(SrsAmf0EcmaArray* arr)
+	int RtmpAmf0Size::ecma_array(RtmpAmf0EcmaArray* arr)
 	{
 		if (!arr)
 		{
@@ -1328,7 +1328,7 @@ namespace RTMP
 		return arr->total_size();
 	}
 
-	int SrsAmf0Size::strict_array(SrsAmf0StrictArray* arr)
+	int RtmpAmf0Size::strict_array(RtmpAmf0StrictArray* arr)
 	{
 		if (!arr)
 		{
@@ -1338,7 +1338,7 @@ namespace RTMP
 		return arr->total_size();
 	}
 
-	int SrsAmf0Size::any(SrsAmf0Any* o)
+	int RtmpAmf0Size::any(RtmpAmf0Any* o)
 	{
 		if (!o)
 		{
@@ -1348,7 +1348,7 @@ namespace RTMP
 		return o->total_size();
 	}
 
-	SrsAmf0String::SrsAmf0String(const char* _value)
+	RtmpAmf0String::RtmpAmf0String(const char* _value)
 	{
 		marker = RTMP_AMF0_String;
 		if (_value)
@@ -1357,110 +1357,110 @@ namespace RTMP
 		}
 	}
 
-	SrsAmf0String::~SrsAmf0String()
+	RtmpAmf0String::~RtmpAmf0String()
 	{
 	}
 
-	int SrsAmf0String::total_size()
+	int RtmpAmf0String::total_size()
 	{
-		return SrsAmf0Size::str(value);
+		return RtmpAmf0Size::str(value);
 	}
 
-	srs_error_t SrsAmf0String::read(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0String::read(Utils::RtmpBuffer* stream)
 	{
 		return srs_amf0_read_string(stream, value);
 	}
 
-	srs_error_t SrsAmf0String::write(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0String::write(Utils::RtmpBuffer* stream)
 	{
 		return srs_amf0_write_string(stream, value);
 	}
 
-	SrsAmf0Any* SrsAmf0String::copy()
+	RtmpAmf0Any* RtmpAmf0String::copy()
 	{
-		SrsAmf0String* copy = new SrsAmf0String(value.c_str());
+		RtmpAmf0String* copy = new RtmpAmf0String(value.c_str());
 		return copy;
 	}
 
-	SrsAmf0Boolean::SrsAmf0Boolean(bool _value)
+	RtmpAmf0Boolean::RtmpAmf0Boolean(bool _value)
 	{
 		marker = RTMP_AMF0_Boolean;
 		value  = _value;
 	}
 
-	SrsAmf0Boolean::~SrsAmf0Boolean()
+	RtmpAmf0Boolean::~RtmpAmf0Boolean()
 	{
 	}
 
-	int SrsAmf0Boolean::total_size()
+	int RtmpAmf0Boolean::total_size()
 	{
-		return SrsAmf0Size::boolean();
+		return RtmpAmf0Size::boolean();
 	}
 
-	srs_error_t SrsAmf0Boolean::read(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0Boolean::read(Utils::RtmpBuffer* stream)
 	{
 		return srs_amf0_read_boolean(stream, value);
 	}
 
-	srs_error_t SrsAmf0Boolean::write(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0Boolean::write(Utils::RtmpBuffer* stream)
 	{
 		return srs_amf0_write_boolean(stream, value);
 	}
 
-	SrsAmf0Any* SrsAmf0Boolean::copy()
+	RtmpAmf0Any* RtmpAmf0Boolean::copy()
 	{
-		SrsAmf0Boolean* copy = new SrsAmf0Boolean(value);
+		RtmpAmf0Boolean* copy = new RtmpAmf0Boolean(value);
 		return copy;
 	}
 
-	SrsAmf0Number::SrsAmf0Number(double _value)
+	RtmpAmf0Number::RtmpAmf0Number(double _value)
 	{
 		marker = RTMP_AMF0_Number;
 		value  = _value;
 	}
 
-	SrsAmf0Number::~SrsAmf0Number()
+	RtmpAmf0Number::~RtmpAmf0Number()
 	{
 	}
 
-	int SrsAmf0Number::total_size()
+	int RtmpAmf0Number::total_size()
 	{
-		return SrsAmf0Size::number();
+		return RtmpAmf0Size::number();
 	}
 
-	srs_error_t SrsAmf0Number::read(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0Number::read(Utils::RtmpBuffer* stream)
 	{
 		return srs_amf0_read_number(stream, value);
 	}
 
-	srs_error_t SrsAmf0Number::write(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0Number::write(Utils::RtmpBuffer* stream)
 	{
 		return srs_amf0_write_number(stream, value);
 	}
 
-	SrsAmf0Any* SrsAmf0Number::copy()
+	RtmpAmf0Any* RtmpAmf0Number::copy()
 	{
-		SrsAmf0Number* copy = new SrsAmf0Number(value);
+		RtmpAmf0Number* copy = new RtmpAmf0Number(value);
 		return copy;
 	}
 
-	SrsAmf0Date::SrsAmf0Date(int64_t value)
+	RtmpAmf0Date::RtmpAmf0Date(int64_t value)
 	{
 		marker      = RTMP_AMF0_Date;
 		_date_value = value;
 		_time_zone  = 0;
 	}
 
-	SrsAmf0Date::~SrsAmf0Date()
+	RtmpAmf0Date::~RtmpAmf0Date()
 	{
 	}
 
-	int SrsAmf0Date::total_size()
+	int RtmpAmf0Date::total_size()
 	{
-		return SrsAmf0Size::date();
+		return RtmpAmf0Size::date();
 	}
 
-	srs_error_t SrsAmf0Date::read(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0Date::read(Utils::RtmpBuffer* stream)
 	{
 		srs_error_t err = srs_success;
 
@@ -1502,7 +1502,7 @@ namespace RTMP
 		return err;
 	}
 
-	srs_error_t SrsAmf0Date::write(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0Date::write(Utils::RtmpBuffer* stream)
 	{
 		srs_error_t err = srs_success;
 
@@ -1533,9 +1533,9 @@ namespace RTMP
 		return err;
 	}
 
-	SrsAmf0Any* SrsAmf0Date::copy()
+	RtmpAmf0Any* RtmpAmf0Date::copy()
 	{
-		SrsAmf0Date* copy = new SrsAmf0Date(0);
+		RtmpAmf0Date* copy = new RtmpAmf0Date(0);
 
 		copy->_date_value = _date_value;
 		copy->_time_zone  = _time_zone;
@@ -1543,81 +1543,81 @@ namespace RTMP
 		return copy;
 	}
 
-	int64_t SrsAmf0Date::date()
+	int64_t RtmpAmf0Date::date()
 	{
 		return _date_value;
 	}
 
-	int16_t SrsAmf0Date::time_zone()
+	int16_t RtmpAmf0Date::time_zone()
 	{
 		return _time_zone;
 	}
 
-	SrsAmf0Null::SrsAmf0Null()
+	RtmpAmf0Null::RtmpAmf0Null()
 	{
 		marker = RTMP_AMF0_Null;
 	}
 
-	SrsAmf0Null::~SrsAmf0Null()
+	RtmpAmf0Null::~RtmpAmf0Null()
 	{
 	}
 
-	int SrsAmf0Null::total_size()
+	int RtmpAmf0Null::total_size()
 	{
-		return SrsAmf0Size::null();
+		return RtmpAmf0Size::null();
 	}
 
-	srs_error_t SrsAmf0Null::read(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0Null::read(Utils::RtmpBuffer* stream)
 	{
 		return srs_amf0_read_null(stream);
 	}
 
-	srs_error_t SrsAmf0Null::write(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0Null::write(Utils::RtmpBuffer* stream)
 	{
 		return srs_amf0_write_null(stream);
 	}
 
-	SrsAmf0Any* SrsAmf0Null::copy()
+	RtmpAmf0Any* RtmpAmf0Null::copy()
 	{
-		SrsAmf0Null* copy = new SrsAmf0Null();
+		RtmpAmf0Null* copy = new RtmpAmf0Null();
 		return copy;
 	}
 
-	SrsAmf0Undefined::SrsAmf0Undefined()
+	RtmpAmf0Undefined::RtmpAmf0Undefined()
 	{
 		marker = RTMP_AMF0_Undefined;
 	}
 
-	SrsAmf0Undefined::~SrsAmf0Undefined()
+	RtmpAmf0Undefined::~RtmpAmf0Undefined()
 	{
 	}
 
-	int SrsAmf0Undefined::total_size()
+	int RtmpAmf0Undefined::total_size()
 	{
-		return SrsAmf0Size::undefined();
+		return RtmpAmf0Size::undefined();
 	}
 
-	srs_error_t SrsAmf0Undefined::read(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0Undefined::read(Utils::RtmpBuffer* stream)
 	{
 		return srs_amf0_read_undefined(stream);
 	}
 
-	srs_error_t SrsAmf0Undefined::write(Utils::RtmpBuffer* stream)
+	srs_error_t RtmpAmf0Undefined::write(Utils::RtmpBuffer* stream)
 	{
 		return srs_amf0_write_undefined(stream);
 	}
 
-	SrsAmf0Any* SrsAmf0Undefined::copy()
+	RtmpAmf0Any* RtmpAmf0Undefined::copy()
 	{
-		SrsAmf0Undefined* copy = new SrsAmf0Undefined();
+		RtmpAmf0Undefined* copy = new RtmpAmf0Undefined();
 		return copy;
 	}
 
-	srs_error_t srs_amf0_read_any(Utils::RtmpBuffer* stream, SrsAmf0Any** ppvalue)
+	srs_error_t srs_amf0_read_any(Utils::RtmpBuffer* stream, RtmpAmf0Any** ppvalue)
 	{
 		srs_error_t err = srs_success;
 
-		if ((err = SrsAmf0Any::discovery(stream, ppvalue)) != srs_success)
+		if ((err = RtmpAmf0Any::discovery(stream, ppvalue)) != srs_success)
 		{
 			return srs_error_wrap(err, "discovery");
 		}
@@ -1926,13 +1926,13 @@ namespace RTMP
 			return false;
 		}
 
-		srs_error_t srs_amf0_write_object_eof(Utils::RtmpBuffer* stream, SrsAmf0ObjectEOF* value)
+		srs_error_t srs_amf0_write_object_eof(Utils::RtmpBuffer* stream, RtmpAmf0ObjectEOF* value)
 		{
 			srs_assert(value != NULL);
 			return value->write(stream);
 		}
 
-		srs_error_t srs_amf0_write_any(Utils::RtmpBuffer* stream, SrsAmf0Any* value)
+		srs_error_t srs_amf0_write_any(Utils::RtmpBuffer* stream, RtmpAmf0Any* value)
 		{
 			srs_assert(value != NULL);
 			return value->write(stream);

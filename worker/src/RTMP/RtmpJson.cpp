@@ -1386,12 +1386,12 @@ void json_value_free(json_value* value)
 namespace RTMP
 {
 
-	class SrsJsonString : public SrsJsonAny
+	class RtmpJsonString : public RtmpJsonAny
 	{
 	public:
 		std::string value;
 
-		SrsJsonString(const char* v)
+		RtmpJsonString(const char* v)
 		{
 			marker = SRS_JSON_String;
 			if (v)
@@ -1399,7 +1399,7 @@ namespace RTMP
 				value = v;
 			}
 		}
-		SrsJsonString(const char* v, int s)
+		RtmpJsonString(const char* v, int s)
 		{
 			marker = SRS_JSON_String;
 			if (v)
@@ -1407,150 +1407,150 @@ namespace RTMP
 				value.append(v, s);
 			}
 		}
-		virtual ~SrsJsonString()
+		virtual ~RtmpJsonString()
 		{
 		}
 	};
 
-	class SrsJsonBoolean : public SrsJsonAny
+	class RtmpJsonBoolean : public RtmpJsonAny
 	{
 	public:
 		bool value;
 
-		SrsJsonBoolean(bool v)
+		RtmpJsonBoolean(bool v)
 		{
 			marker = SRS_JSON_Boolean;
 			value  = v;
 		}
-		virtual ~SrsJsonBoolean()
+		virtual ~RtmpJsonBoolean()
 		{
 		}
 	};
 
-	class SrsJsonInteger : public SrsJsonAny
+	class RtmpJsonInteger : public RtmpJsonAny
 	{
 	public:
 		int64_t value;
 
-		SrsJsonInteger(int64_t v)
+		RtmpJsonInteger(int64_t v)
 		{
 			marker = SRS_JSON_Integer;
 			value  = v;
 		}
-		virtual ~SrsJsonInteger()
+		virtual ~RtmpJsonInteger()
 		{
 		}
 	};
 
-	class SrsJsonNumber : public SrsJsonAny
+	class RtmpJsonNumber : public RtmpJsonAny
 	{
 	public:
 		double value;
 
-		SrsJsonNumber(double v)
+		RtmpJsonNumber(double v)
 		{
 			marker = SRS_JSON_Number;
 			value  = v;
 		}
-		virtual ~SrsJsonNumber()
+		virtual ~RtmpJsonNumber()
 		{
 		}
 	};
 
-	class SrsJsonNull : public SrsJsonAny
+	class RtmpJsonNull : public RtmpJsonAny
 	{
 	public:
-		SrsJsonNull()
+		RtmpJsonNull()
 		{
 			marker = SRS_JSON_Null;
 		}
-		virtual ~SrsJsonNull()
+		virtual ~RtmpJsonNull()
 		{
 		}
 	};
 
-	SrsJsonAny::SrsJsonAny()
+	RtmpJsonAny::RtmpJsonAny()
 	{
 		marker = 0;
 	}
 
-	SrsJsonAny::~SrsJsonAny()
+	RtmpJsonAny::~RtmpJsonAny()
 	{
 	}
 
-	bool SrsJsonAny::is_string()
+	bool RtmpJsonAny::is_string()
 	{
 		return marker == SRS_JSON_String;
 	}
 
-	bool SrsJsonAny::is_boolean()
+	bool RtmpJsonAny::is_boolean()
 	{
 		return marker == SRS_JSON_Boolean;
 	}
 
-	bool SrsJsonAny::is_number()
+	bool RtmpJsonAny::is_number()
 	{
 		return marker == SRS_JSON_Number;
 	}
 
-	bool SrsJsonAny::is_integer()
+	bool RtmpJsonAny::is_integer()
 	{
 		return marker == SRS_JSON_Integer;
 	}
 
-	bool SrsJsonAny::is_object()
+	bool RtmpJsonAny::is_object()
 	{
 		return marker == SRS_JSON_Object;
 	}
 
-	bool SrsJsonAny::is_array()
+	bool RtmpJsonAny::is_array()
 	{
 		return marker == SRS_JSON_Array;
 	}
 
-	bool SrsJsonAny::is_null()
+	bool RtmpJsonAny::is_null()
 	{
 		return marker == SRS_JSON_Null;
 	}
 
-	std::string SrsJsonAny::to_str()
+	std::string RtmpJsonAny::to_str()
 	{
-		SrsJsonString* p = dynamic_cast<SrsJsonString*>(this);
+		RtmpJsonString* p = dynamic_cast<RtmpJsonString*>(this);
 		srs_assert(p != NULL);
 		return p->value;
 	}
 
-	bool SrsJsonAny::to_boolean()
+	bool RtmpJsonAny::to_boolean()
 	{
-		SrsJsonBoolean* p = dynamic_cast<SrsJsonBoolean*>(this);
+		RtmpJsonBoolean* p = dynamic_cast<RtmpJsonBoolean*>(this);
 		srs_assert(p != NULL);
 		return p->value;
 	}
 
-	int64_t SrsJsonAny::to_integer()
+	int64_t RtmpJsonAny::to_integer()
 	{
-		SrsJsonInteger* p = dynamic_cast<SrsJsonInteger*>(this);
+		RtmpJsonInteger* p = dynamic_cast<RtmpJsonInteger*>(this);
 		srs_assert(p != NULL);
 		return p->value;
 	}
 
-	double SrsJsonAny::to_number()
+	double RtmpJsonAny::to_number()
 	{
-		SrsJsonNumber* p = dynamic_cast<SrsJsonNumber*>(this);
+		RtmpJsonNumber* p = dynamic_cast<RtmpJsonNumber*>(this);
 		srs_assert(p != NULL);
 		return p->value;
 	}
 
-	SrsJsonObject* SrsJsonAny::to_object()
+	RtmpJsonObject* RtmpJsonAny::to_object()
 	{
-		SrsJsonObject* p = dynamic_cast<SrsJsonObject*>(this);
+		RtmpJsonObject* p = dynamic_cast<RtmpJsonObject*>(this);
 		srs_assert(p != NULL);
 		return p;
 	}
 
-	SrsJsonArray* SrsJsonAny::to_array()
+	RtmpJsonArray* RtmpJsonAny::to_array()
 	{
-		SrsJsonArray* p = dynamic_cast<SrsJsonArray*>(this);
+		RtmpJsonArray* p = dynamic_cast<RtmpJsonArray*>(this);
 		srs_assert(p != NULL);
 		return p;
 	}
@@ -1602,13 +1602,13 @@ namespace RTMP
 		return ss.str();
 	}
 
-	std::string SrsJsonAny::dumps()
+	std::string RtmpJsonAny::dumps()
 	{
 		switch (marker)
 		{
 			case SRS_JSON_String:
 			{
-				SrsJsonString* p = dynamic_cast<SrsJsonString*>(this);
+				RtmpJsonString* p = dynamic_cast<RtmpJsonString*>(this);
 				srs_assert(p != NULL);
 				return json_serialize_string(p->value);
 			}
@@ -1633,12 +1633,12 @@ namespace RTMP
 			}
 			case SRS_JSON_Object:
 			{
-				SrsJsonObject* obj = to_object();
+				RtmpJsonObject* obj = to_object();
 				return obj->dumps();
 			}
 			case SRS_JSON_Array:
 			{
-				SrsJsonArray* arr = to_array();
+				RtmpJsonArray* arr = to_array();
 				return arr->dumps();
 			}
 			default:
@@ -1648,29 +1648,29 @@ namespace RTMP
 		}
 	}
 
-	SrsAmf0Any* SrsJsonAny::to_amf0()
+	RtmpAmf0Any* RtmpJsonAny::to_amf0()
 	{
 		switch (marker)
 		{
 			case SRS_JSON_String:
 			{
-				return SrsAmf0Any::str(to_str().c_str());
+				return RtmpAmf0Any::str(to_str().c_str());
 			}
 			case SRS_JSON_Boolean:
 			{
-				return SrsAmf0Any::boolean(to_boolean());
+				return RtmpAmf0Any::boolean(to_boolean());
 			}
 			case SRS_JSON_Integer:
 			{
-				return SrsAmf0Any::number(to_integer());
+				return RtmpAmf0Any::number(to_integer());
 			}
 			case SRS_JSON_Number:
 			{
-				return SrsAmf0Any::number(to_number());
+				return RtmpAmf0Any::number(to_number());
 			}
 			case SRS_JSON_Null:
 			{
-				return SrsAmf0Any::null();
+				return RtmpAmf0Any::null();
 			}
 			case SRS_JSON_Object:
 			{
@@ -1684,52 +1684,52 @@ namespace RTMP
 			}
 			default:
 			{
-				return SrsAmf0Any::null();
+				return RtmpAmf0Any::null();
 			}
 		}
 	}
 
-	SrsJsonAny* SrsJsonAny::str(const char* value)
+	RtmpJsonAny* RtmpJsonAny::str(const char* value)
 	{
-		return new SrsJsonString(value);
+		return new RtmpJsonString(value);
 	}
 
-	SrsJsonAny* SrsJsonAny::str(const char* value, int length)
+	RtmpJsonAny* RtmpJsonAny::str(const char* value, int length)
 	{
-		return new SrsJsonString(value, length);
+		return new RtmpJsonString(value, length);
 	}
 
-	SrsJsonAny* SrsJsonAny::boolean(bool value)
+	RtmpJsonAny* RtmpJsonAny::boolean(bool value)
 	{
-		return new SrsJsonBoolean(value);
+		return new RtmpJsonBoolean(value);
 	}
 
-	SrsJsonAny* SrsJsonAny::integer(int64_t value)
+	RtmpJsonAny* RtmpJsonAny::integer(int64_t value)
 	{
-		return new SrsJsonInteger(value);
+		return new RtmpJsonInteger(value);
 	}
 
-	SrsJsonAny* SrsJsonAny::number(double value)
+	RtmpJsonAny* RtmpJsonAny::number(double value)
 	{
-		return new SrsJsonNumber(value);
+		return new RtmpJsonNumber(value);
 	}
 
-	SrsJsonAny* SrsJsonAny::null()
+	RtmpJsonAny* RtmpJsonAny::null()
 	{
-		return new SrsJsonNull();
+		return new RtmpJsonNull();
 	}
 
-	SrsJsonObject* SrsJsonAny::object()
+	RtmpJsonObject* RtmpJsonAny::object()
 	{
-		return new SrsJsonObject();
+		return new RtmpJsonObject();
 	}
 
-	SrsJsonArray* SrsJsonAny::array()
+	RtmpJsonArray* RtmpJsonAny::array()
 	{
-		return new SrsJsonArray();
+		return new RtmpJsonArray();
 	}
 
-	SrsJsonAny* srs_json_parse_tree(json_value* node)
+	RtmpJsonAny* srs_json_parse_tree(json_value* node)
 	{
 		if (!node)
 		{
@@ -1739,22 +1739,22 @@ namespace RTMP
 		switch (node->type)
 		{
 			case json_null:
-				return SrsJsonAny::null();
+				return RtmpJsonAny::null();
 			case json_string:
-				return SrsJsonAny::str(node->u.string.ptr, node->u.string.length);
+				return RtmpJsonAny::str(node->u.string.ptr, node->u.string.length);
 			case json_integer:
-				return SrsJsonAny::integer(node->u.integer);
+				return RtmpJsonAny::integer(node->u.integer);
 			case json_double:
-				return SrsJsonAny::number(node->u.dbl);
+				return RtmpJsonAny::number(node->u.dbl);
 			case json_boolean:
-				return SrsJsonAny::boolean(node->u.boolean != 0);
+				return RtmpJsonAny::boolean(node->u.boolean != 0);
 			case json_object:
 			{
-				SrsJsonObject* obj = SrsJsonAny::object();
+				RtmpJsonObject* obj = RtmpJsonAny::object();
 				for (int i = 0; i < (int)node->u.object.length; i++)
 				{
 					json_object_entry& entry = node->u.object.values[i];
-					SrsJsonAny* value        = srs_json_parse_tree(entry.value);
+					RtmpJsonAny* value        = srs_json_parse_tree(entry.value);
 
 					if (!value)
 					{
@@ -1768,11 +1768,11 @@ namespace RTMP
 			}
 			case json_array:
 			{
-				SrsJsonArray* arr = SrsJsonAny::array();
+				RtmpJsonArray* arr = RtmpJsonAny::array();
 				for (int i = 0; i < (int)node->u.array.length; i++)
 				{
 					json_value* p     = node->u.array.values[i];
-					SrsJsonAny* value = srs_json_parse_tree(p);
+					RtmpJsonAny* value = srs_json_parse_tree(p);
 
 					if (!value)
 					{
@@ -1789,7 +1789,7 @@ namespace RTMP
 		}
 	}
 
-	SrsJsonAny* SrsJsonAny::loads(std::string str)
+	RtmpJsonAny* RtmpJsonAny::loads(std::string str)
 	{
 		if (str.empty())
 		{
@@ -1797,49 +1797,49 @@ namespace RTMP
 		}
 
 		json_value* j  = json_parse(str.data(), str.length());
-		SrsJsonAny* sj = srs_json_parse_tree(j);
+		RtmpJsonAny* sj = srs_json_parse_tree(j);
 		json_value_free(j);
 
 		return sj;
 	}
 
-	SrsJsonObject::SrsJsonObject()
+	RtmpJsonObject::RtmpJsonObject()
 	{
 		marker = SRS_JSON_Object;
 	}
 
-	SrsJsonObject::~SrsJsonObject()
+	RtmpJsonObject::~RtmpJsonObject()
 	{
-		std::vector<SrsJsonObjectPropertyType>::iterator it;
+		std::vector<RtmpJsonObjectPropertyType>::iterator it;
 		for (it = properties.begin(); it != properties.end(); ++it)
 		{
-			SrsJsonObjectPropertyType item = *it;
-			SrsJsonAny* obj                = item.second;
+			RtmpJsonObjectPropertyType item = *it;
+			RtmpJsonAny* obj                = item.second;
 			FREEP(obj);
 		}
 		properties.clear();
 	}
 
-	int SrsJsonObject::count()
+	int RtmpJsonObject::count()
 	{
 		return (int)properties.size();
 	}
 
-	std::string SrsJsonObject::key_at(int index)
+	std::string RtmpJsonObject::key_at(int index)
 	{
 		srs_assert(index < count());
-		SrsJsonObjectPropertyType& elem = properties[index];
+		RtmpJsonObjectPropertyType& elem = properties[index];
 		return elem.first;
 	}
 
-	SrsJsonAny* SrsJsonObject::value_at(int index)
+	RtmpJsonAny* RtmpJsonObject::value_at(int index)
 	{
 		srs_assert(index < count());
-		SrsJsonObjectPropertyType& elem = properties[index];
+		RtmpJsonObjectPropertyType& elem = properties[index];
 		return elem.second;
 	}
 
-	std::string SrsJsonObject::dumps()
+	std::string RtmpJsonObject::dumps()
 	{
 		std::stringstream ss;
 
@@ -1848,7 +1848,7 @@ namespace RTMP
 		for (int i = 0; i < (int)properties.size(); i++)
 		{
 			std::string name = this->key_at(i);
-			SrsJsonAny* any  = this->value_at(i);
+			RtmpJsonAny* any  = this->value_at(i);
 
 			ss << SRS_JFIELD_NAME(name) << any->dumps();
 			if (i < (int)properties.size() - 1)
@@ -1862,14 +1862,14 @@ namespace RTMP
 		return ss.str();
 	}
 
-	SrsAmf0Any* SrsJsonObject::to_amf0()
+	RtmpAmf0Any* RtmpJsonObject::to_amf0()
 	{
-		SrsAmf0Object* obj = SrsAmf0Any::object();
+		RtmpAmf0Object* obj = RtmpAmf0Any::object();
 
 		for (int i = 0; i < (int)properties.size(); i++)
 		{
 			std::string name = this->key_at(i);
-			SrsJsonAny* any  = this->value_at(i);
+			RtmpJsonAny* any  = this->value_at(i);
 
 			obj->set(name, any->to_amf0());
 		}
@@ -1877,7 +1877,7 @@ namespace RTMP
 		return obj;
 	}
 
-	SrsJsonObject* SrsJsonObject::set(std::string key, SrsJsonAny* value)
+	RtmpJsonObject* RtmpJsonObject::set(std::string key, RtmpJsonAny* value)
 	{
 		if (!value)
 		{
@@ -1885,13 +1885,13 @@ namespace RTMP
 			return this;
 		}
 
-		std::vector<SrsJsonObjectPropertyType>::iterator it;
+		std::vector<RtmpJsonObjectPropertyType>::iterator it;
 
 		for (it = properties.begin(); it != properties.end(); ++it)
 		{
-			SrsJsonObjectPropertyType& elem = *it;
+			RtmpJsonObjectPropertyType& elem = *it;
 			std::string name                = elem.first;
-			SrsJsonAny* any                 = elem.second;
+			RtmpJsonAny* any                 = elem.second;
 
 			if (key == name)
 			{
@@ -1905,15 +1905,15 @@ namespace RTMP
 		return this;
 	}
 
-	SrsJsonAny* SrsJsonObject::get_property(std::string name)
+	RtmpJsonAny* RtmpJsonObject::get_property(std::string name)
 	{
-		std::vector<SrsJsonObjectPropertyType>::iterator it;
+		std::vector<RtmpJsonObjectPropertyType>::iterator it;
 
 		for (it = properties.begin(); it != properties.end(); ++it)
 		{
-			SrsJsonObjectPropertyType& elem = *it;
+			RtmpJsonObjectPropertyType& elem = *it;
 			std::string key                 = elem.first;
-			SrsJsonAny* any                 = elem.second;
+			RtmpJsonAny* any                 = elem.second;
 			if (key == name)
 			{
 				return any;
@@ -1923,9 +1923,9 @@ namespace RTMP
 		return NULL;
 	}
 
-	SrsJsonAny* SrsJsonObject::ensure_property_string(std::string name)
+	RtmpJsonAny* RtmpJsonObject::ensure_property_string(std::string name)
 	{
-		SrsJsonAny* prop = get_property(name);
+		RtmpJsonAny* prop = get_property(name);
 
 		if (!prop)
 		{
@@ -1940,9 +1940,9 @@ namespace RTMP
 		return prop;
 	}
 
-	SrsJsonAny* SrsJsonObject::ensure_property_integer(std::string name)
+	RtmpJsonAny* RtmpJsonObject::ensure_property_integer(std::string name)
 	{
-		SrsJsonAny* prop = get_property(name);
+		RtmpJsonAny* prop = get_property(name);
 
 		if (!prop)
 		{
@@ -1957,9 +1957,9 @@ namespace RTMP
 		return prop;
 	}
 
-	SrsJsonAny* SrsJsonObject::ensure_property_number(std::string name)
+	RtmpJsonAny* RtmpJsonObject::ensure_property_number(std::string name)
 	{
-		SrsJsonAny* prop = get_property(name);
+		RtmpJsonAny* prop = get_property(name);
 
 		if (!prop)
 		{
@@ -1974,9 +1974,9 @@ namespace RTMP
 		return prop;
 	}
 
-	SrsJsonAny* SrsJsonObject::ensure_property_boolean(std::string name)
+	RtmpJsonAny* RtmpJsonObject::ensure_property_boolean(std::string name)
 	{
-		SrsJsonAny* prop = get_property(name);
+		RtmpJsonAny* prop = get_property(name);
 
 		if (!prop)
 		{
@@ -1991,9 +1991,9 @@ namespace RTMP
 		return prop;
 	}
 
-	SrsJsonAny* SrsJsonObject::ensure_property_object(std::string name)
+	RtmpJsonAny* RtmpJsonObject::ensure_property_object(std::string name)
 	{
-		SrsJsonAny* prop = get_property(name);
+		RtmpJsonAny* prop = get_property(name);
 
 		if (!prop)
 		{
@@ -2008,9 +2008,9 @@ namespace RTMP
 		return prop;
 	}
 
-	SrsJsonAny* SrsJsonObject::ensure_property_array(std::string name)
+	RtmpJsonAny* RtmpJsonObject::ensure_property_array(std::string name)
 	{
-		SrsJsonAny* prop = get_property(name);
+		RtmpJsonAny* prop = get_property(name);
 
 		if (!prop)
 		{
@@ -2025,47 +2025,47 @@ namespace RTMP
 		return prop;
 	}
 
-	SrsJsonArray::SrsJsonArray()
+	RtmpJsonArray::RtmpJsonArray()
 	{
 		marker = SRS_JSON_Array;
 	}
 
-	SrsJsonArray::~SrsJsonArray()
+	RtmpJsonArray::~RtmpJsonArray()
 	{
-		std::vector<SrsJsonAny*>::iterator it;
+		std::vector<RtmpJsonAny*>::iterator it;
 		for (it = properties.begin(); it != properties.end(); ++it)
 		{
-			SrsJsonAny* item = *it;
+			RtmpJsonAny* item = *it;
 			FREEP(item);
 		}
 		properties.clear();
 	}
 
-	int SrsJsonArray::count()
+	int RtmpJsonArray::count()
 	{
 		return (int)properties.size();
 	}
 
-	SrsJsonAny* SrsJsonArray::at(int index)
+	RtmpJsonAny* RtmpJsonArray::at(int index)
 	{
 		srs_assert(index < count());
-		SrsJsonAny* elem = properties[index];
+		RtmpJsonAny* elem = properties[index];
 		return elem;
 	}
 
-	SrsJsonArray* SrsJsonArray::add(SrsJsonAny* value)
+	RtmpJsonArray* RtmpJsonArray::add(RtmpJsonAny* value)
 	{
 		properties.push_back(value);
 		return this;
 	}
 
-	SrsJsonArray* SrsJsonArray::append(SrsJsonAny* value)
+	RtmpJsonArray* RtmpJsonArray::append(RtmpJsonAny* value)
 	{
 		add(value);
 		return this;
 	}
 
-	std::string SrsJsonArray::dumps()
+	std::string RtmpJsonArray::dumps()
 	{
 		std::stringstream ss;
 
@@ -2073,7 +2073,7 @@ namespace RTMP
 
 		for (int i = 0; i < (int)properties.size(); i++)
 		{
-			SrsJsonAny* any = properties[i];
+			RtmpJsonAny* any = properties[i];
 
 			ss << any->dumps();
 
@@ -2088,13 +2088,13 @@ namespace RTMP
 		return ss.str();
 	}
 
-	SrsAmf0Any* SrsJsonArray::to_amf0()
+	RtmpAmf0Any* RtmpJsonArray::to_amf0()
 	{
-		SrsAmf0StrictArray* arr = SrsAmf0Any::strict_array();
+		RtmpAmf0StrictArray* arr = RtmpAmf0Any::strict_array();
 
 		for (int i = 0; i < (int)properties.size(); i++)
 		{
-			SrsJsonAny* any = properties[i];
+			RtmpJsonAny* any = properties[i];
 
 			arr->append(any->to_amf0());
 		}

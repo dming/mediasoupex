@@ -18,7 +18,7 @@ SrsCplxError::SrsCplxError()
 
 SrsCplxError::~SrsCplxError()
 {
-	FREEA(wrapped);
+	FREEPA(wrapped);
 }
 
 std::string SrsCplxError::description()

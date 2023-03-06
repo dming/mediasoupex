@@ -74,7 +74,7 @@ using PayloadChannelWriteFn  = void (*)(
 	}                                                                                                \
 	(void)0
 // Please use the freepa(T[]) to free an array, otherwise the behavior is undefined.
-#define FREEA(pa)                                                                                  \
+#define FREEPA(pa)                                                                                 \
 	if (pa)                                                                                          \
 	{                                                                                                \
 		delete[] pa;                                                                                   \

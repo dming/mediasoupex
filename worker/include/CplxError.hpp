@@ -498,7 +498,7 @@ public:
 #define srs_error_code_str(err) SrsCplxError::error_code_str(err)
 #define srs_error_code_longstr(err) SrsCplxError::error_code_longstr(err)
 #define srs_error_reset(err)                                                                       \
-	FREEA(err);                                                                                      \
+	FREEPA(err);                                                                                     \
 	err = srs_success
 
 #ifndef srs_assert

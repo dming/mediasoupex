@@ -22,9 +22,9 @@ namespace RTMP
 	void RtmpHandshakeBytes::dispose()
 	{
 		MS_TRACE();
-		FREEA(c0c1);
-		FREEA(s0s1s2);
-		FREEA(c2);
+		FREEPA(c0c1);
+		FREEPA(s0s1s2);
+		FREEPA(c2);
 	}
 
 	int RtmpHandshakeBytes::readC0c1(RtmpTcpConnection* io)

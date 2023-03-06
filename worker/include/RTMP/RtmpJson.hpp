@@ -10,14 +10,14 @@ namespace RTMP
 	////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////
 	// JSON decode
-	// 1. SrsJsonAny: read any from str:char*
-	//        SrsJsonAny* any = NULL;
-	//        if ((any = SrsJsonAny::loads(str)) == NULL) {
+	// 1. RtmpJsonAny: read any from str:char*
+	//        RtmpJsonAny* any = NULL;
+	//        if ((any = RtmpJsonAny::loads(str)) == NULL) {
 	//            return -1;
 	//         }
 	//        srs_assert(pany); // if success, always valid object.
-	// 2. SrsJsonAny: convert to specifid type, for instance, string
-	//        SrsJsonAny* any = ...
+	// 2. RtmpJsonAny: convert to specifid type, for instance, string
+	//        RtmpJsonAny* any = ...
 	//        if (any->is_string()) {
 	//            string v = any->to_str();
 	//        }
@@ -28,21 +28,21 @@ namespace RTMP
 	////////////////////////////////////////////////////////////////////////
 	// @see: https://github.com/udp/json-parser
 
-	class SrsAmf0Any;
-	class SrsJsonArray;
-	class SrsJsonObject;
+	class RtmpAmf0Any;
+	class RtmpJsonArray;
+	class RtmpJsonObject;
 
-	class SrsJsonAny
+	class RtmpJsonAny
 	{
 	public:
 		char marker;
 		// Don't directly create this object,
-		// please use SrsJsonAny::str() to create a concreated one.
+		// please use RtmpJsonAny::str() to create a concreated one.
 	protected:
-		SrsJsonAny();
+		RtmpJsonAny();
 
 	public:
-		virtual ~SrsJsonAny();
+		virtual ~RtmpJsonAny();
 
 	public:
 		virtual bool is_string();
@@ -68,91 +68,91 @@ namespace RTMP
 		virtual double to_number();
 		// Get the object of any when is_object() indicates true.
 		// user must ensure the type is a object, or assert failed.
-		virtual SrsJsonObject* to_object();
+		virtual RtmpJsonObject* to_object();
 		// Get the ecma array of any when is_ecma_array() indicates true.
 		// user must ensure the type is a ecma array, or assert failed.
-		virtual SrsJsonArray* to_array();
+		virtual RtmpJsonArray* to_array();
 
 	public:
 		virtual std::string dumps();
-		virtual SrsAmf0Any* to_amf0();
+		virtual RtmpAmf0Any* to_amf0();
 
 	public:
-		static SrsJsonAny* str(const char* value = NULL);
-		static SrsJsonAny* str(const char* value, int length);
-		static SrsJsonAny* boolean(bool value = false);
-		static SrsJsonAny* integer(int64_t value = 0);
-		static SrsJsonAny* number(double value = 0.0);
-		static SrsJsonAny* null();
-		static SrsJsonObject* object();
-		static SrsJsonArray* array();
+		static RtmpJsonAny* str(const char* value = NULL);
+		static RtmpJsonAny* str(const char* value, int length);
+		static RtmpJsonAny* boolean(bool value = false);
+		static RtmpJsonAny* integer(int64_t value = 0);
+		static RtmpJsonAny* number(double value = 0.0);
+		static RtmpJsonAny* null();
+		static RtmpJsonObject* object();
+		static RtmpJsonArray* array();
 
 	public:
 		// Read json tree from string.
 		// @return json object. NULL if error.
-		static SrsJsonAny* loads(std::string str);
+		static RtmpJsonAny* loads(std::string str);
 	};
 
-	class SrsJsonObject : public SrsJsonAny
+	class RtmpJsonObject : public RtmpJsonAny
 	{
 	private:
-		typedef std::pair<std::string, SrsJsonAny*> SrsJsonObjectPropertyType;
-		std::vector<SrsJsonObjectPropertyType> properties;
+		typedef std::pair<std::string, RtmpJsonAny*> RtmpJsonObjectPropertyType;
+		std::vector<RtmpJsonObjectPropertyType> properties;
 
 	private:
-		// Use SrsJsonAny::object() to create it.
-		friend class SrsJsonAny;
-		SrsJsonObject();
+		// Use RtmpJsonAny::object() to create it.
+		friend class RtmpJsonAny;
+		RtmpJsonObject();
 
 	public:
-		virtual ~SrsJsonObject();
+		virtual ~RtmpJsonObject();
 
 	public:
 		virtual int count();
 		// @remark: max index is count().
 		virtual std::string key_at(int index);
 		// @remark: max index is count().
-		virtual SrsJsonAny* value_at(int index);
+		virtual RtmpJsonAny* value_at(int index);
 
 	public:
 		virtual std::string dumps();
-		virtual SrsAmf0Any* to_amf0();
+		virtual RtmpAmf0Any* to_amf0();
 
 	public:
-		virtual SrsJsonObject* set(std::string key, SrsJsonAny* value);
-		virtual SrsJsonAny* get_property(std::string name);
-		virtual SrsJsonAny* ensure_property_string(std::string name);
-		virtual SrsJsonAny* ensure_property_integer(std::string name);
-		virtual SrsJsonAny* ensure_property_number(std::string name);
-		virtual SrsJsonAny* ensure_property_boolean(std::string name);
-		virtual SrsJsonAny* ensure_property_object(std::string name);
-		virtual SrsJsonAny* ensure_property_array(std::string name);
+		virtual RtmpJsonObject* set(std::string key, RtmpJsonAny* value);
+		virtual RtmpJsonAny* get_property(std::string name);
+		virtual RtmpJsonAny* ensure_property_string(std::string name);
+		virtual RtmpJsonAny* ensure_property_integer(std::string name);
+		virtual RtmpJsonAny* ensure_property_number(std::string name);
+		virtual RtmpJsonAny* ensure_property_boolean(std::string name);
+		virtual RtmpJsonAny* ensure_property_object(std::string name);
+		virtual RtmpJsonAny* ensure_property_array(std::string name);
 	};
 
-	class SrsJsonArray : public SrsJsonAny
+	class RtmpJsonArray : public RtmpJsonAny
 	{
 	private:
-		std::vector<SrsJsonAny*> properties;
+		std::vector<RtmpJsonAny*> properties;
 
 	private:
-		// Use SrsJsonAny::array() to create it.
-		friend class SrsJsonAny;
-		SrsJsonArray();
+		// Use RtmpJsonAny::array() to create it.
+		friend class RtmpJsonAny;
+		RtmpJsonArray();
 
 	public:
-		virtual ~SrsJsonArray();
+		virtual ~RtmpJsonArray();
 
 	public:
 		virtual int count();
 		// @remark: max index is count().
-		virtual SrsJsonAny* at(int index);
-		virtual SrsJsonArray* add(SrsJsonAny* value);
+		virtual RtmpJsonAny* at(int index);
+		virtual RtmpJsonArray* add(RtmpJsonAny* value);
 		// alias to add.
-		virtual SrsJsonArray* append(SrsJsonAny* value);
+		virtual RtmpJsonArray* append(RtmpJsonAny* value);
 
 	public:
 		virtual std::string dumps();
-		virtual SrsAmf0Any* to_amf0();
+		virtual RtmpAmf0Any* to_amf0();
 	};
 
 	////////////////////////////////////////////////////////////////////////

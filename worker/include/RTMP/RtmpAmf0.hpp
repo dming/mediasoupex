@@ -10,17 +10,17 @@
 namespace RTMP
 {
 
-	class SrsAmf0Object;
-	class SrsAmf0EcmaArray;
-	class SrsAmf0StrictArray;
-	class SrsJsonAny;
+	class RtmpAmf0Object;
+	class RtmpAmf0EcmaArray;
+	class RtmpAmf0StrictArray;
+	class RtmpJsonAny;
 
 	// internal objects, user should never use it.
 	namespace srs_internal
 	{
-		class SrsUnSortedHashtable;
-		class SrsAmf0ObjectEOF;
-		class SrsAmf0Date;
+		class RtmpUnSortedHashtable;
+		class RtmpAmf0ObjectEOF;
+		class RtmpAmf0Date;
 	} // namespace srs_internal
 
 	/*
@@ -43,24 +43,24 @@ namespace RTMP
 	 // use stream instead.
 
 	 2. directly read AMF0 any instance from stream:
-	 SrsAmf0Any* pany = NULL;
+	 RtmpAmf0Any* pany = NULL;
 	 srs_amf0_read_any(&stream, &pany);
 
-	 3. use SrsAmf0Any to discovery instance from stream:
-	 SrsAmf0Any* pany = NULL;
-	 SrsAmf0Any::discovery(&stream, &pany);
+	 3. use RtmpAmf0Any to discovery instance from stream:
+	 RtmpAmf0Any* pany = NULL;
+	 RtmpAmf0Any::discovery(&stream, &pany);
 
 	 4. directly read specified AMF0 instance value from stream:
 	 string value;
 	 srs_amf0_read_string(&stream, value);
 
 	 5. directly read specified AMF0 instance from stream:
-	 SrsAmf0Any* str = SrsAmf0Any::str();
+	 RtmpAmf0Any* str = RtmpAmf0Any::str();
 	 str->read(&stream);
 
 	 6. get value from AMF0 instance:
 	 // parse or set by other user
-	 SrsAmf0Any* any = ...;
+	 RtmpAmf0Any* any = ...;
 
 	 if (any->is_string()) {
 	 string str = any->to_string();
@@ -68,17 +68,17 @@ namespace RTMP
 
 	 7. get complex object from AMF0 insance:
 	 // parse or set by other user
-	 SrsAmf0Any* any = ...;
+	 RtmpAmf0Any* any = ...;
 
 	 if (any->is_object()) {
-	 SrsAmf0Object* obj = any->to_object();
-	 obj->set("width", SrsAmf0Any::number(1024));
-	 obj->set("height", SrsAmf0Any::number(576));
+	 RtmpAmf0Object* obj = any->to_object();
+	 obj->set("width", RtmpAmf0Any::number(1024));
+	 obj->set("height", RtmpAmf0Any::number(576));
 	 }
 
 	 8. serialize AMF0 instance to bytes:
 	 // parse or set by other user
-	 SrsAmf0Any* any = ...;
+	 RtmpAmf0Any* any = ...;
 
 	 char* bytes = new char[any->total_size()];
 
@@ -102,14 +102,14 @@ namespace RTMP
 	 *         | strict-array-type | date-type | long-string-type | xml-document-type
 	 *         | typed-object-type
 	 */
-	class SrsAmf0Any
+	class RtmpAmf0Any
 	{
 	public:
 		char marker;
 
 	public:
-		SrsAmf0Any();
-		virtual ~SrsAmf0Any();
+		RtmpAmf0Any();
+		virtual ~RtmpAmf0Any();
 		// type identify, user should identify the type then convert from/to value.
 	public:
 		/**
@@ -206,17 +206,17 @@ namespace RTMP
 		 * convert instance to amf0 object,
 		 * @remark assert is_object(), user must ensure the type then convert.
 		 */
-		virtual SrsAmf0Object* to_object();
+		virtual RtmpAmf0Object* to_object();
 		/**
 		 * convert instance to ecma array,
 		 * @remark assert is_ecma_array(), user must ensure the type then convert.
 		 */
-		virtual SrsAmf0EcmaArray* to_ecma_array();
+		virtual RtmpAmf0EcmaArray* to_ecma_array();
 		/**
 		 * convert instance to strict array,
 		 * @remark assert is_strict_array(), user must ensure the type then convert.
 		 */
-		virtual SrsAmf0StrictArray* to_strict_array();
+		virtual RtmpAmf0StrictArray* to_strict_array();
 		// set value of instance
 	public:
 		/**
@@ -242,7 +242,7 @@ namespace RTMP
 		/**
 		 * copy current AMF0 instance.
 		 */
-		virtual SrsAmf0Any* copy() = 0;
+		virtual RtmpAmf0Any* copy() = 0;
 		/**
 		 * human readable print
 		 * @param pdata, output the heap data, NULL to ignore.
@@ -253,49 +253,49 @@ namespace RTMP
 		/**
 		 * convert amf0 to json.
 		 */
-		virtual SrsJsonAny* to_json();
+		virtual RtmpJsonAny* to_json();
 		// create AMF0 instance.
 	public:
 		/**
 		 * create an AMF0 string instance, set string content by value.
 		 */
-		static SrsAmf0Any* str(const char* value = NULL);
+		static RtmpAmf0Any* str(const char* value = NULL);
 		/**
 		 * create an AMF0 boolean instance, set boolean content by value.
 		 */
-		static SrsAmf0Any* boolean(bool value = false);
+		static RtmpAmf0Any* boolean(bool value = false);
 		/**
 		 * create an AMF0 number instance, set number content by value.
 		 */
-		static SrsAmf0Any* number(double value = 0.0);
+		static RtmpAmf0Any* number(double value = 0.0);
 		/**
 		 * create an AMF0 date instance
 		 */
-		static SrsAmf0Any* date(int64_t value = 0);
+		static RtmpAmf0Any* date(int64_t value = 0);
 		/**
 		 * create an AMF0 null instance
 		 */
-		static SrsAmf0Any* null();
+		static RtmpAmf0Any* null();
 		/**
 		 * create an AMF0 undefined instance
 		 */
-		static SrsAmf0Any* undefined();
+		static RtmpAmf0Any* undefined();
 		/**
 		 * create an AMF0 empty object instance
 		 */
-		static SrsAmf0Object* object();
+		static RtmpAmf0Object* object();
 		/**
 		 * create an AMF0 object-EOF instance
 		 */
-		static SrsAmf0Any* object_eof();
+		static RtmpAmf0Any* object_eof();
 		/**
 		 * create an AMF0 empty ecma-array instance
 		 */
-		static SrsAmf0EcmaArray* ecma_array();
+		static RtmpAmf0EcmaArray* ecma_array();
 		/**
 		 * create an AMF0 empty strict-array instance
 		 */
-		static SrsAmf0StrictArray* strict_array();
+		static RtmpAmf0StrictArray* strict_array();
 		// discovery instance from stream
 	public:
 		/**
@@ -305,7 +305,7 @@ namespace RTMP
 		 * @remark, instance is created without read from stream, user must
 		 *       use (*ppvalue)->read(stream) to get the instance.
 		 */
-		static srs_error_t discovery(Utils::RtmpBuffer* stream, SrsAmf0Any** ppvalue);
+		static srs_error_t discovery(Utils::RtmpBuffer* stream, RtmpAmf0Any** ppvalue);
 	};
 
 	/**
@@ -313,32 +313,32 @@ namespace RTMP
 	 * anonymous-object-type = object-marker *(object-property)
 	 * object-property = (UTF-8 value-type) | (UTF-8-empty object-end-marker)
 	 */
-	class SrsAmf0Object : public SrsAmf0Any
+	class RtmpAmf0Object : public RtmpAmf0Any
 	{
 	private:
-		srs_internal::SrsUnSortedHashtable* properties;
-		srs_internal::SrsAmf0ObjectEOF* eof;
+		srs_internal::RtmpUnSortedHashtable* properties;
+		srs_internal::RtmpAmf0ObjectEOF* eof;
 
 	private:
-		friend class SrsAmf0Any;
+		friend class RtmpAmf0Any;
 		/**
 		 * make amf0 object to private,
-		 * use should never declare it, use SrsAmf0Any::object() to create it.
+		 * use should never declare it, use RtmpAmf0Any::object() to create it.
 		 */
-		SrsAmf0Object();
+		RtmpAmf0Object();
 
 	public:
-		virtual ~SrsAmf0Object();
+		virtual ~RtmpAmf0Object();
 		// serialize/deserialize to/from stream.
 	public:
 		virtual int total_size();
 		virtual srs_error_t read(Utils::RtmpBuffer* stream);
 		virtual srs_error_t write(Utils::RtmpBuffer* stream);
-		virtual SrsAmf0Any* copy();
+		virtual RtmpAmf0Any* copy();
 		/**
 		 * convert amf0 to json.
 		 */
-		virtual SrsJsonAny* to_json();
+		virtual RtmpJsonAny* to_json();
 		// properties iteration
 	public:
 		/**
@@ -364,7 +364,7 @@ namespace RTMP
 		 * get the property(key:value) value at index.
 		 * @remark: max index is count().
 		 */
-		virtual SrsAmf0Any* value_at(int index);
+		virtual RtmpAmf0Any* value_at(int index);
 		// property set/get.
 	public:
 		/**
@@ -373,26 +373,26 @@ namespace RTMP
 		 * @param value, an AMF0 instance property value.
 		 * @remark user should never free the value, this instance will manage it.
 		 */
-		virtual void set(std::string key, SrsAmf0Any* value);
+		virtual void set(std::string key, RtmpAmf0Any* value);
 		/**
 		 * get the property(key:value) of object,
 		 * @param name, the property name/key
 		 * @return the property AMF0 value, NULL if not found.
 		 * @remark user should never free the returned value, copy it if needed.
 		 */
-		virtual SrsAmf0Any* get_property(std::string name);
+		virtual RtmpAmf0Any* get_property(std::string name);
 		/**
 		 * get the string property, ensure the property is_string().
 		 * @return the property AMF0 value, NULL if not found, or not a string.
 		 * @remark user should never free the returned value, copy it if needed.
 		 */
-		virtual SrsAmf0Any* ensure_property_string(std::string name);
+		virtual RtmpAmf0Any* ensure_property_string(std::string name);
 		/**
 		 * get the number property, ensure the property is_number().
 		 * @return the property AMF0 value, NULL if not found, or not a number.
 		 * @remark user should never free the returned value, copy it if needed.
 		 */
-		virtual SrsAmf0Any* ensure_property_number(std::string name);
+		virtual RtmpAmf0Any* ensure_property_number(std::string name);
 		/**
 		 * remove the property specified by name.
 		 */
@@ -405,33 +405,33 @@ namespace RTMP
 	 * associative-count = U32
 	 * object-property = (UTF-8 value-type) | (UTF-8-empty object-end-marker)
 	 */
-	class SrsAmf0EcmaArray : public SrsAmf0Any
+	class RtmpAmf0EcmaArray : public RtmpAmf0Any
 	{
 	private:
-		srs_internal::SrsUnSortedHashtable* properties;
-		srs_internal::SrsAmf0ObjectEOF* eof;
+		srs_internal::RtmpUnSortedHashtable* properties;
+		srs_internal::RtmpAmf0ObjectEOF* eof;
 		int32_t _count;
 
 	private:
-		friend class SrsAmf0Any;
+		friend class RtmpAmf0Any;
 		/**
 		 * make amf0 object to private,
-		 * use should never declare it, use SrsAmf0Any::ecma_array() to create it.
+		 * use should never declare it, use RtmpAmf0Any::ecma_array() to create it.
 		 */
-		SrsAmf0EcmaArray();
+		RtmpAmf0EcmaArray();
 
 	public:
-		virtual ~SrsAmf0EcmaArray();
+		virtual ~RtmpAmf0EcmaArray();
 		// serialize/deserialize to/from stream.
 	public:
 		virtual int total_size();
 		virtual srs_error_t read(Utils::RtmpBuffer* stream);
 		virtual srs_error_t write(Utils::RtmpBuffer* stream);
-		virtual SrsAmf0Any* copy();
+		virtual RtmpAmf0Any* copy();
 		/**
 		 * convert amf0 to json.
 		 */
-		virtual SrsJsonAny* to_json();
+		virtual RtmpJsonAny* to_json();
 		// properties iteration
 	public:
 		/**
@@ -457,7 +457,7 @@ namespace RTMP
 		 * get the property(key:value) value at index.
 		 * @remark: max index is count().
 		 */
-		virtual SrsAmf0Any* value_at(int index);
+		virtual RtmpAmf0Any* value_at(int index);
 		// property set/get.
 	public:
 		/**
@@ -466,26 +466,26 @@ namespace RTMP
 		 * @param value, an AMF0 instance property value.
 		 * @remark user should never free the value, this instance will manage it.
 		 */
-		virtual void set(std::string key, SrsAmf0Any* value);
+		virtual void set(std::string key, RtmpAmf0Any* value);
 		/**
 		 * get the property(key:value) of array,
 		 * @param name, the property name/key
 		 * @return the property AMF0 value, NULL if not found.
 		 * @remark user should never free the returned value, copy it if needed.
 		 */
-		virtual SrsAmf0Any* get_property(std::string name);
+		virtual RtmpAmf0Any* get_property(std::string name);
 		/**
 		 * get the string property, ensure the property is_string().
 		 * @return the property AMF0 value, NULL if not found, or not a string.
 		 * @remark user should never free the returned value, copy it if needed.
 		 */
-		virtual SrsAmf0Any* ensure_property_string(std::string name);
+		virtual RtmpAmf0Any* ensure_property_string(std::string name);
 		/**
 		 * get the number property, ensure the property is_number().
 		 * @return the property AMF0 value, NULL if not found, or not a number.
 		 * @remark user should never free the returned value, copy it if needed.
 		 */
-		virtual SrsAmf0Any* ensure_property_number(std::string name);
+		virtual RtmpAmf0Any* ensure_property_number(std::string name);
 	};
 
 	/**
@@ -493,32 +493,32 @@ namespace RTMP
 	 * array-count = U32
 	 * strict-array-type = array-count *(value-type)
 	 */
-	class SrsAmf0StrictArray : public SrsAmf0Any
+	class RtmpAmf0StrictArray : public RtmpAmf0Any
 	{
 	private:
-		std::vector<SrsAmf0Any*> properties;
+		std::vector<RtmpAmf0Any*> properties;
 		int32_t _count;
 
 	private:
-		friend class SrsAmf0Any;
+		friend class RtmpAmf0Any;
 		/**
 		 * make amf0 object to private,
-		 * use should never declare it, use SrsAmf0Any::strict_array() to create it.
+		 * use should never declare it, use RtmpAmf0Any::strict_array() to create it.
 		 */
-		SrsAmf0StrictArray();
+		RtmpAmf0StrictArray();
 
 	public:
-		virtual ~SrsAmf0StrictArray();
+		virtual ~RtmpAmf0StrictArray();
 		// serialize/deserialize to/from stream.
 	public:
 		virtual int total_size();
 		virtual srs_error_t read(Utils::RtmpBuffer* stream);
 		virtual srs_error_t write(Utils::RtmpBuffer* stream);
-		virtual SrsAmf0Any* copy();
+		virtual RtmpAmf0Any* copy();
 		/**
 		 * convert amf0 to json.
 		 */
-		virtual SrsJsonAny* to_json();
+		virtual RtmpJsonAny* to_json();
 		// properties iteration
 	public:
 		/**
@@ -533,7 +533,7 @@ namespace RTMP
 		 * get the elements key at index.
 		 * @remark: max index is count().
 		 */
-		virtual SrsAmf0Any* at(int index);
+		virtual RtmpAmf0Any* at(int index);
 		// property set/get.
 	public:
 		/**
@@ -541,13 +541,13 @@ namespace RTMP
 		 * @param any, an AMF0 instance property value.
 		 * @remark user should never free the any, this instance will manage it.
 		 */
-		virtual void append(SrsAmf0Any* any);
+		virtual void append(RtmpAmf0Any* any);
 	};
 
 	/**
 	 * the class to get amf0 object size
 	 */
-	class SrsAmf0Size
+	class RtmpAmf0Size
 	{
 	public:
 		static int utf8(std::string value);
@@ -557,11 +557,11 @@ namespace RTMP
 		static int null();
 		static int undefined();
 		static int boolean();
-		static int object(SrsAmf0Object* obj);
+		static int object(RtmpAmf0Object* obj);
 		static int object_eof();
-		static int ecma_array(SrsAmf0EcmaArray* arr);
-		static int strict_array(SrsAmf0StrictArray* arr);
-		static int any(SrsAmf0Any* o);
+		static int ecma_array(RtmpAmf0EcmaArray* arr);
+		static int strict_array(RtmpAmf0StrictArray* arr);
+		static int any(RtmpAmf0Any* o);
 	};
 
 	/**
@@ -569,7 +569,7 @@ namespace RTMP
 	 * @param ppvalue, the output amf0 any elem.
 	 *         NULL if error; otherwise, never NULL and user must free it.
 	 */
-	extern srs_error_t srs_amf0_read_any(Utils::RtmpBuffer* stream, SrsAmf0Any** ppvalue);
+	extern srs_error_t srs_amf0_read_any(Utils::RtmpBuffer* stream, RtmpAmf0Any** ppvalue);
 
 	/**
 	 * read amf0 string from stream.
@@ -620,29 +620,29 @@ namespace RTMP
 		 * 2.4 String Type
 		 * string-type = string-marker UTF-8
 		 * @return default value is empty string.
-		 * @remark: use SrsAmf0Any::str() to create it.
+		 * @remark: use RtmpAmf0Any::str() to create it.
 		 */
-		class SrsAmf0String : public SrsAmf0Any
+		class RtmpAmf0String : public RtmpAmf0Any
 		{
 		public:
 			std::string value;
 
 		private:
-			friend class SrsAmf0Any;
+			friend class RtmpAmf0Any;
 			/**
 			 * make amf0 string to private,
-			 * use should never declare it, use SrsAmf0Any::str() to create it.
+			 * use should never declare it, use RtmpAmf0Any::str() to create it.
 			 */
-			SrsAmf0String(const char* _value);
+			RtmpAmf0String(const char* _value);
 
 		public:
-			virtual ~SrsAmf0String();
+			virtual ~RtmpAmf0String();
 
 		public:
 			virtual int total_size();
 			virtual srs_error_t read(Utils::RtmpBuffer* stream);
 			virtual srs_error_t write(Utils::RtmpBuffer* stream);
-			virtual SrsAmf0Any* copy();
+			virtual RtmpAmf0Any* copy();
 		};
 
 		/**
@@ -652,27 +652,27 @@ namespace RTMP
 		 *         0 is false, <> 0 is true
 		 * @return default value is false.
 		 */
-		class SrsAmf0Boolean : public SrsAmf0Any
+		class RtmpAmf0Boolean : public RtmpAmf0Any
 		{
 		public:
 			bool value;
 
 		private:
-			friend class SrsAmf0Any;
+			friend class RtmpAmf0Any;
 			/**
 			 * make amf0 boolean to private,
-			 * use should never declare it, use SrsAmf0Any::boolean() to create it.
+			 * use should never declare it, use RtmpAmf0Any::boolean() to create it.
 			 */
-			SrsAmf0Boolean(bool _value);
+			RtmpAmf0Boolean(bool _value);
 
 		public:
-			virtual ~SrsAmf0Boolean();
+			virtual ~RtmpAmf0Boolean();
 
 		public:
 			virtual int total_size();
 			virtual srs_error_t read(Utils::RtmpBuffer* stream);
 			virtual srs_error_t write(Utils::RtmpBuffer* stream);
-			virtual SrsAmf0Any* copy();
+			virtual RtmpAmf0Any* copy();
 		};
 
 		/**
@@ -681,27 +681,27 @@ namespace RTMP
 		 * number-type = number-marker DOUBLE
 		 * @return default value is 0.
 		 */
-		class SrsAmf0Number : public SrsAmf0Any
+		class RtmpAmf0Number : public RtmpAmf0Any
 		{
 		public:
 			double value;
 
 		private:
-			friend class SrsAmf0Any;
+			friend class RtmpAmf0Any;
 			/**
 			 * make amf0 number to private,
-			 * use should never declare it, use SrsAmf0Any::number() to create it.
+			 * use should never declare it, use RtmpAmf0Any::number() to create it.
 			 */
-			SrsAmf0Number(double _value);
+			RtmpAmf0Number(double _value);
 
 		public:
-			virtual ~SrsAmf0Number();
+			virtual ~RtmpAmf0Number();
 
 		public:
 			virtual int total_size();
 			virtual srs_error_t read(Utils::RtmpBuffer* stream);
 			virtual srs_error_t write(Utils::RtmpBuffer* stream);
-			virtual SrsAmf0Any* copy();
+			virtual RtmpAmf0Any* copy();
 		};
 
 		/**
@@ -710,28 +710,28 @@ namespace RTMP
 		 * date-type = date-marker DOUBLE time-zone
 		 * @see: https://github.com/ossrs/srs/issues/185
 		 */
-		class SrsAmf0Date : public SrsAmf0Any
+		class RtmpAmf0Date : public RtmpAmf0Any
 		{
 		private:
 			int64_t _date_value;
 			int16_t _time_zone;
 
 		private:
-			friend class SrsAmf0Any;
+			friend class RtmpAmf0Any;
 			/**
 			 * make amf0 date to private,
-			 * use should never declare it, use SrsAmf0Any::date() to create it.
+			 * use should never declare it, use RtmpAmf0Any::date() to create it.
 			 */
-			SrsAmf0Date(int64_t value);
+			RtmpAmf0Date(int64_t value);
 
 		public:
-			virtual ~SrsAmf0Date();
+			virtual ~RtmpAmf0Date();
 			// serialize/deserialize to/from stream.
 		public:
 			virtual int total_size();
 			virtual srs_error_t read(Utils::RtmpBuffer* stream);
 			virtual srs_error_t write(Utils::RtmpBuffer* stream);
-			virtual SrsAmf0Any* copy();
+			virtual RtmpAmf0Any* copy();
 
 		public:
 			/**
@@ -749,24 +749,24 @@ namespace RTMP
 		 * 2.7 null Type
 		 * null-type = null-marker
 		 */
-		class SrsAmf0Null : public SrsAmf0Any
+		class RtmpAmf0Null : public RtmpAmf0Any
 		{
 		private:
-			friend class SrsAmf0Any;
+			friend class RtmpAmf0Any;
 			/**
 			 * make amf0 null to private,
-			 * use should never declare it, use SrsAmf0Any::null() to create it.
+			 * use should never declare it, use RtmpAmf0Any::null() to create it.
 			 */
-			SrsAmf0Null();
+			RtmpAmf0Null();
 
 		public:
-			virtual ~SrsAmf0Null();
+			virtual ~RtmpAmf0Null();
 
 		public:
 			virtual int total_size();
 			virtual srs_error_t read(Utils::RtmpBuffer* stream);
 			virtual srs_error_t write(Utils::RtmpBuffer* stream);
-			virtual SrsAmf0Any* copy();
+			virtual RtmpAmf0Any* copy();
 		};
 
 		/**
@@ -774,24 +774,24 @@ namespace RTMP
 		 * 2.8 undefined Type
 		 * undefined-type = undefined-marker
 		 */
-		class SrsAmf0Undefined : public SrsAmf0Any
+		class RtmpAmf0Undefined : public RtmpAmf0Any
 		{
 		private:
-			friend class SrsAmf0Any;
+			friend class RtmpAmf0Any;
 			/**
 			 * make amf0 undefined to private,
-			 * use should never declare it, use SrsAmf0Any::undefined() to create it.
+			 * use should never declare it, use RtmpAmf0Any::undefined() to create it.
 			 */
-			SrsAmf0Undefined();
+			RtmpAmf0Undefined();
 
 		public:
-			virtual ~SrsAmf0Undefined();
+			virtual ~RtmpAmf0Undefined();
 
 		public:
 			virtual int total_size();
 			virtual srs_error_t read(Utils::RtmpBuffer* stream);
 			virtual srs_error_t write(Utils::RtmpBuffer* stream);
-			virtual SrsAmf0Any* copy();
+			virtual RtmpAmf0Any* copy();
 		};
 
 		/**
@@ -800,36 +800,36 @@ namespace RTMP
 		 * if ordered in map, the string compare order, the FMLE will creash when
 		 * get the response of connect app.
 		 */
-		class SrsUnSortedHashtable
+		class RtmpUnSortedHashtable
 		{
 		private:
-			typedef std::pair<std::string, SrsAmf0Any*> SrsAmf0ObjectPropertyType;
-			std::vector<SrsAmf0ObjectPropertyType> properties;
+			typedef std::pair<std::string, RtmpAmf0Any*> RtmpAmf0ObjectPropertyType;
+			std::vector<RtmpAmf0ObjectPropertyType> properties;
 
 		public:
-			SrsUnSortedHashtable();
-			virtual ~SrsUnSortedHashtable();
+			RtmpUnSortedHashtable();
+			virtual ~RtmpUnSortedHashtable();
 
 		public:
 			virtual int count();
 			virtual void clear();
 			virtual std::string key_at(int index);
 			virtual const char* key_raw_at(int index);
-			virtual SrsAmf0Any* value_at(int index);
+			virtual RtmpAmf0Any* value_at(int index);
 			/**
 			 * set the value of hashtable.
 			 * @param value, the value to set. NULL to delete the property.
 			 */
-			virtual void set(std::string key, SrsAmf0Any* value);
+			virtual void set(std::string key, RtmpAmf0Any* value);
 
 		public:
-			virtual SrsAmf0Any* get_property(std::string name);
-			virtual SrsAmf0Any* ensure_property_string(std::string name);
-			virtual SrsAmf0Any* ensure_property_number(std::string name);
+			virtual RtmpAmf0Any* get_property(std::string name);
+			virtual RtmpAmf0Any* ensure_property_string(std::string name);
+			virtual RtmpAmf0Any* ensure_property_number(std::string name);
 			virtual void remove(std::string name);
 
 		public:
-			virtual void copy(SrsUnSortedHashtable* src);
+			virtual void copy(RtmpUnSortedHashtable* src);
 		};
 
 		/**
@@ -837,17 +837,17 @@ namespace RTMP
 		 * object-end-type = UTF-8-empty object-end-marker
 		 * 0x00 0x00 0x09
 		 */
-		class SrsAmf0ObjectEOF : public SrsAmf0Any
+		class RtmpAmf0ObjectEOF : public RtmpAmf0Any
 		{
 		public:
-			SrsAmf0ObjectEOF();
-			virtual ~SrsAmf0ObjectEOF();
+			RtmpAmf0ObjectEOF();
+			virtual ~RtmpAmf0ObjectEOF();
 
 		public:
 			virtual int total_size();
 			virtual srs_error_t read(Utils::RtmpBuffer* stream);
 			virtual srs_error_t write(Utils::RtmpBuffer* stream);
-			virtual SrsAmf0Any* copy();
+			virtual RtmpAmf0Any* copy();
 		};
 
 		/**
@@ -862,9 +862,9 @@ namespace RTMP
 		extern srs_error_t srs_amf0_write_utf8(Utils::RtmpBuffer* stream, std::string value);
 
 		extern bool srs_amf0_is_object_eof(Utils::RtmpBuffer* stream);
-		extern srs_error_t srs_amf0_write_object_eof(Utils::RtmpBuffer* stream, SrsAmf0ObjectEOF* value);
+		extern srs_error_t srs_amf0_write_object_eof(Utils::RtmpBuffer* stream, RtmpAmf0ObjectEOF* value);
 
-		extern srs_error_t srs_amf0_write_any(Utils::RtmpBuffer* stream, SrsAmf0Any* value);
+		extern srs_error_t srs_amf0_write_any(Utils::RtmpBuffer* stream, RtmpAmf0Any* value);
 	}; // namespace srs_internal
 
 } // namespace RTMP

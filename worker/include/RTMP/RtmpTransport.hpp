@@ -8,6 +8,7 @@
 #ifndef MS_RTMP_TRANSPORT_HPP
 #define MS_RTMP_TRANSPORT_HPP
 
+#include "RTMP/RtmpKernel.hpp"
 #include "RTMP/RtmpProtocol.hpp"
 #include "RTMP/RtmpTcpConnection.hpp"
 #include "RTC/TransportTuple.hpp"
@@ -42,6 +43,11 @@ namespace RTMP
 		srs_error_t OnRecvMessage(RTC::TransportTuple* tuple, RtmpCommonMessage* msg);
 		// handle Packet Functions
 		srs_error_t HandleRtmpConnectAppPacket(RtmpConnectAppPacket* packet);
+		srs_error_t HandleRtmpFMLEStartPacket(RtmpFMLEStartPacket* packet);
+		srs_error_t HandleRtmpCreateStreamPacket(RtmpCreateStreamPacket* packet);
+		srs_error_t HandleRtmpPublishPacket(RtmpPublishPacket* packet);
+		// @param server_ip the ip of server.
+		srs_error_t response_connect_app(RtmpRequest* req, const char* server_ip);
 
 	private:
 		RtmpTcpConnection* connection;

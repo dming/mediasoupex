@@ -228,5 +228,127 @@ namespace RTMP
 		virtual ~RtmpChunkStream();
 	};
 
+	// The message header for shared ptr message.
+	// only the message for all msgs are same.
+	class RtmpSharedMessageHeader
+	{
+	public:
+		// 3bytes.
+		// Three-byte field that represents the size of the payload in bytes.
+		// It is set in big-endian format.
+		int32_t payload_length;
+		// 1byte.
+		// One byte field to represent the message type. A range of type IDs
+		// (1-7) are reserved for protocol control messages.
+		// For example, RTMP_MSG_AudioMessage or RTMP_MSG_VideoMessage.
+		int8_t message_type;
+		// Get the perfered cid(chunk stream id) which sendout over.
+		// set at decoding, and canbe used for directly send message,
+		// For example, dispatch to all connections.
+		int perfer_cid;
+
+	public:
+		RtmpSharedMessageHeader();
+		virtual ~RtmpSharedMessageHeader();
+	};
+
+	// The shared ptr message.
+	// For audio/video/data message that need less memory copy.
+	// and only for output.
+	//
+	// Create first object by constructor and create(),
+	// use copy if need reference count message.
+	class RtmpSharedPtrMessage
+	{
+		// 4.1. Message Header
+	public:
+		// The header can shared, only set the timestamp and stream id.
+		// RtmpSharedMessageHeader header;
+		// Four-byte field that contains a timestamp of the message.
+		// The 4 bytes are packed in the big-endian order.
+		// @remark, used as calc timestamp when decode and encode time.
+		// @remark, we use 64bits for large time for jitter detect and hls.
+		int64_t timestamp;
+		// 4bytes.
+		// Four-byte field that identifies the stream of the message. These
+		// bytes are set in big-endian format.
+		int32_t stream_id;
+		// 4.2. Message Payload
+	public:
+		// The current message parsed size,
+		//       size <= header.payload_length
+		// For the payload maybe sent in multiple chunks.
+		int size;
+		// The payload of message, the RtmpCommonMessage never know about the detail of payload,
+		// user must use RtmpProtocol.decode_message to get concrete packet.
+		// @remark, not all message payload can be decoded to packet. for example,
+		//       video/audio packet use raw bytes, no video/audio packet.
+		char* payload;
+
+	private:
+		class RtmpSharedPtrPayload
+		{
+		public:
+			// The shared message header.
+			RtmpSharedMessageHeader header;
+			// The actual shared payload.
+			char* payload;
+			// The size of payload.
+			int size;
+			// The reference count
+			int shared_count;
+
+		public:
+			RtmpSharedPtrPayload();
+			virtual ~RtmpSharedPtrPayload();
+		};
+		RtmpSharedPtrPayload* ptr;
+
+	public:
+		RtmpSharedPtrMessage();
+		virtual ~RtmpSharedPtrMessage();
+
+	public:
+		// Create shared ptr message,
+		// copy header, manage the payload of msg,
+		// set the payload to NULL to prevent double free.
+		// @remark payload of msg set to NULL if success.
+		// @remark User should free the msg.
+		virtual srs_error_t create(RtmpCommonMessage* msg);
+		// Create shared ptr message,
+		// from the header and payload.
+		// @remark user should never free the payload.
+		// @param pheader, the header to copy to the message. NULL to ignore.
+		virtual srs_error_t create(RtmpMessageHeader* pheader, char* payload, int size);
+		// Create shared ptr message from RAW payload.
+		// @remark Note that the header is set to zero.
+		virtual void wrap(char* payload, int size);
+		// Get current reference count.
+		// when this object created, count set to 0.
+		// if copy() this object, count increase 1.
+		// if this or copy deleted, free payload when count is 0, or count--.
+		// @remark, assert object is created.
+		virtual int count();
+		// check perfer cid and stream id.
+		// @return whether stream id already set.
+		virtual bool check(int stream_id);
+
+	public:
+		virtual bool is_av();
+		virtual bool is_audio();
+		virtual bool is_video();
+
+	public:
+		// generate the chunk header to cache.
+		// @return the size of header.
+		virtual int chunk_header(char* cache, int nb_cache, bool c0);
+
+	public:
+		// copy current shared ptr message, use ref-count.
+		// @remark, assert object is created.
+		virtual RtmpSharedPtrMessage* copy();
+		// Only copy the buffer, without header fields.
+		virtual RtmpSharedPtrMessage* copy2();
+	};
 } // namespace RTMP
 #endif

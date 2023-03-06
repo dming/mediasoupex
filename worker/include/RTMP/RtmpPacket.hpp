@@ -111,10 +111,10 @@ namespace RTMP
 		// @remark: alloc in packet constructor, user can directly use it,
 		//       user should never alloc it again which will cause memory leak.
 		// @remark, never be NULL.
-		SrsAmf0Object* command_object;
+		RtmpAmf0Object* command_object;
 		// Any optional information
 		// @remark, optional, init to and maybe NULL.
-		SrsAmf0Object* args;
+		RtmpAmf0Object* args;
 
 	public:
 		RtmpConnectAppPacket();
@@ -141,11 +141,11 @@ namespace RTMP
 		double transaction_id;
 		// Name-value pairs that describe the properties(fmsver etc.) of the connection.
 		// @remark, never be NULL.
-		SrsAmf0Object* props;
+		RtmpAmf0Object* props;
 		// Name-value pairs that describe the response from|the server. 'code',
 		// 'level', 'description' are names of few among such information.
 		// @remark, never be NULL.
-		SrsAmf0Object* info;
+		RtmpAmf0Object* info;
 
 	public:
 		RtmpConnectAppResPacket();
@@ -177,10 +177,10 @@ namespace RTMP
 		// If there exists any command info this
 		// is set, else this is set to null type.
 		// @remark, optional, init to and maybe NULL.
-		SrsAmf0Any* command_object;
+		RtmpAmf0Any* command_object;
 		// Any optional arguments to be provided
 		// @remark, optional, init to and maybe NULL.
-		SrsAmf0Any* arguments;
+		RtmpAmf0Any* arguments;
 
 	public:
 		RtmpCallPacket();
@@ -207,10 +207,10 @@ namespace RTMP
 		double transaction_id;
 		// If there exists any command info this is set, else this is set to null type.
 		// @remark, optional, init to and maybe NULL.
-		SrsAmf0Any* command_object;
+		RtmpAmf0Any* command_object;
 		// Response from the method that was called.
 		// @remark, optional, init to and maybe NULL.
-		SrsAmf0Any* response;
+		RtmpAmf0Any* response;
 
 	public:
 		RtmpCallResPacket(double _transaction_id);
@@ -239,13 +239,13 @@ namespace RTMP
 		double transaction_id;
 		// If there exists any command info this is set, else this is set to null type.
 		// @remark, never be NULL, an AMF0 null instance.
-		SrsAmf0Any* command_object; // null
+		RtmpAmf0Any* command_object; // null
 	public:
 		RtmpCreateStreamPacket();
 		virtual ~RtmpCreateStreamPacket();
 
 	public:
-		void set_command_object(SrsAmf0Any* v);
+		void set_command_object(RtmpAmf0Any* v);
 		// Decode functions for concrete packet to override.
 	public:
 		virtual srs_error_t decode(Utils::RtmpBuffer* stream);
@@ -268,7 +268,7 @@ namespace RTMP
 		double transaction_id;
 		// If there exists any command info this is set, else this is set to null type.
 		// @remark, never be NULL, an AMF0 null instance.
-		SrsAmf0Any* command_object; // null
+		RtmpAmf0Any* command_object; // null
 		// The return value is either a stream ID or an error information object.
 		double stream_id;
 
@@ -298,7 +298,7 @@ namespace RTMP
 		double transaction_id;
 		// Command information object does not exist. Set to null type.
 		// @remark, never be NULL, an AMF0 null instance.
-		SrsAmf0Any* command_object; // null
+		RtmpAmf0Any* command_object; // null
 	public:
 		RtmpCloseStreamPacket();
 		virtual ~RtmpCloseStreamPacket();
@@ -317,7 +317,7 @@ namespace RTMP
 		double transaction_id;
 		// If there exists any command info this is set, else this is set to null type.
 		// @remark, never be NULL, an AMF0 null instance.
-		SrsAmf0Any* command_object; // null
+		RtmpAmf0Any* command_object; // null
 		// The stream name to start publish or release.
 		std::string stream_name;
 
@@ -326,7 +326,7 @@ namespace RTMP
 		virtual ~RtmpFMLEStartPacket();
 
 	public:
-		void set_command_object(SrsAmf0Any* v);
+		void set_command_object(RtmpAmf0Any* v);
 		// Decode functions for concrete packet to override.
 	public:
 		virtual srs_error_t decode(Utils::RtmpBuffer* stream);
@@ -353,17 +353,17 @@ namespace RTMP
 		double transaction_id;
 		// If there exists any command info this is set, else this is set to null type.
 		// @remark, never be NULL, an AMF0 null instance.
-		SrsAmf0Any* command_object; // null
+		RtmpAmf0Any* command_object; // null
 		// The optional args, set to undefined.
 		// @remark, never be NULL, an AMF0 undefined instance.
-		SrsAmf0Any* args; // undefined
+		RtmpAmf0Any* args; // undefined
 	public:
 		RtmpFMLEStartResPacket(double _transaction_id);
 		virtual ~RtmpFMLEStartResPacket();
 
 	public:
-		void set_args(SrsAmf0Any* v);
-		void set_command_object(SrsAmf0Any* v);
+		void set_args(RtmpAmf0Any* v);
+		void set_command_object(RtmpAmf0Any* v);
 		// Decode functions for concrete packet to override.
 	public:
 		virtual srs_error_t decode(Utils::RtmpBuffer* stream);
@@ -391,7 +391,7 @@ namespace RTMP
 		double transaction_id;
 		// Command information object does not exist. Set to null type.
 		// @remark, never be NULL, an AMF0 null instance.
-		SrsAmf0Any* command_object; // null
+		RtmpAmf0Any* command_object; // null
 		// Name with which the stream is published.
 		std::string stream_name;
 		// Type of publishing. Set to "live", "record", or "append".
@@ -411,7 +411,7 @@ namespace RTMP
 		virtual ~RtmpPublishPacket();
 
 	public:
-		void set_command_object(SrsAmf0Any* v);
+		void set_command_object(RtmpAmf0Any* v);
 		// Decode functions for concrete packet to override.
 	public:
 		virtual srs_error_t decode(Utils::RtmpBuffer* stream);
@@ -437,7 +437,7 @@ namespace RTMP
 		double transaction_id;
 		// Command information object does not exist. Set to null type.
 		// @remark, never be NULL, an AMF0 null instance.
-		SrsAmf0Any* command_object; // null
+		RtmpAmf0Any* command_object; // null
 		// true or false, to indicate pausing or resuming play
 		bool is_pause;
 		// Number of milliseconds at which the the stream is paused or play resumed.
@@ -465,7 +465,7 @@ namespace RTMP
 		double transaction_id;
 		// Command information does not exist. Set to null type.
 		// @remark, never be NULL, an AMF0 null instance.
-		SrsAmf0Any* command_object; // null
+		RtmpAmf0Any* command_object; // null
 		// Name of the stream to play.
 		// To play video (FLV) files, specify the name of the stream without a file
 		//       extension (for example, "sample").
@@ -531,20 +531,20 @@ namespace RTMP
 		double transaction_id;
 		// Command information does not exist. Set to null type.
 		// @remark, never be NULL, an AMF0 null instance.
-		SrsAmf0Any* command_object; // null
+		RtmpAmf0Any* command_object; // null
 		// If the play command is successful, the client receives OnStatus message from
 		// server which is NetStream.Play.Start. If the specified stream is not found,
 		// NetStream.Play.StreamNotFound is received.
 		// @remark, never be NULL, an AMF0 object instance.
-		SrsAmf0Object* desc;
+		RtmpAmf0Object* desc;
 
 	public:
 		RtmpPlayResPacket();
 		virtual ~RtmpPlayResPacket();
 
 	public:
-		void set_command_object(SrsAmf0Any* v);
-		void set_desc(SrsAmf0Object* v);
+		void set_command_object(RtmpAmf0Any* v);
+		void set_desc(RtmpAmf0Object* v);
 		// Encode functions for concrete packet to override.
 	public:
 		virtual int get_prefer_cid();
@@ -565,13 +565,13 @@ namespace RTMP
 		double transaction_id;
 		// Command information does not exist. Set to null type.
 		// @remark, never be NULL, an AMF0 null instance.
-		SrsAmf0Any* args; // null
+		RtmpAmf0Any* args; // null
 	public:
 		RtmpOnBWDonePacket();
 		virtual ~RtmpOnBWDonePacket();
 
 	public:
-		void set_args(SrsAmf0Any* v);
+		void set_args(RtmpAmf0Any* v);
 		// Encode functions for concrete packet to override.
 	public:
 		virtual int get_prefer_cid();
@@ -593,19 +593,19 @@ namespace RTMP
 		double transaction_id;
 		// Command information does not exist. Set to null type.
 		// @remark, never be NULL, an AMF0 null instance.
-		SrsAmf0Any* args; // null
+		RtmpAmf0Any* args; // null
 		// Name-value pairs that describe the response from the server.
 		// 'code','level', 'description' are names of few among such information.
 		// @remark, never be NULL, an AMF0 object instance.
-		SrsAmf0Object* data;
+		RtmpAmf0Object* data;
 
 	public:
 		RtmpOnStatusCallPacket();
 		virtual ~RtmpOnStatusCallPacket();
 
 	public:
-		void set_args(SrsAmf0Any* v);
-		void set_data(SrsAmf0Object* v);
+		void set_args(RtmpAmf0Any* v);
+		void set_data(RtmpAmf0Object* v);
 		// Encode functions for concrete packet to override.
 	public:
 		virtual int get_prefer_cid();
@@ -626,15 +626,15 @@ namespace RTMP
 		// Name-value pairs that describe the response from the server.
 		// 'code', are names of few among such information.
 		// @remark, never be NULL, an AMF0 object instance.
-		SrsAmf0Object* data;
+		RtmpAmf0Object* data;
 
 	public:
 		RtmpOnStatusDataPacket();
 		virtual ~RtmpOnStatusDataPacket();
 
 	public:
-		void set_data(SrsAmf0Object* v);
-		SrsAmf0Object* get_data();
+		void set_data(RtmpAmf0Object* v);
+		RtmpAmf0Object* get_data();
 		// Encode functions for concrete packet to override.
 	public:
 		virtual int get_prefer_cid();
@@ -684,14 +684,14 @@ namespace RTMP
 		std::string name;
 		// Metadata of stream.
 		// @remark, never be NULL, an AMF0 object instance.
-		SrsAmf0Object* metadata;
+		RtmpAmf0Object* metadata;
 
 	public:
 		RtmpOnMetaDataPacket();
 		virtual ~RtmpOnMetaDataPacket();
 
 	public:
-		void set_metadata(SrsAmf0Object* v);
+		void set_metadata(RtmpAmf0Object* v);
 		// Decode functions for concrete packet to override.
 	public:
 		virtual srs_error_t decode(Utils::RtmpBuffer* stream);

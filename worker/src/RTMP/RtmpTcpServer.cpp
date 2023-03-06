@@ -62,5 +62,9 @@ namespace RTMP
 		MS_TRACE();
 
 		this->listener->OnRtcTcpConnectionClosed(this, static_cast<RTMP::RtmpTcpConnection*>(connection));
+		MS_DEBUG_DEV(
+		  "UserOnTcpConnectionClosed ip=%s, port=%" PRIu16,
+		  connection->GetPeerIp().c_str(),
+		  connection->GetPeerPort());
 	}
 } // namespace RTMP

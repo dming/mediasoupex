@@ -64,7 +64,7 @@ namespace RTMP
 
 			if ((err = encode_packet(stream)) != srs_success)
 			{
-				FREEA(payload);
+				FREEPA(payload);
 				return srs_error_wrap(err, "encode packet");
 			}
 		}
@@ -104,7 +104,7 @@ namespace RTMP
 	{
 		command_name   = RTMP_AMF0_COMMAND_CONNECT;
 		transaction_id = 1;
-		command_object = SrsAmf0Any::object();
+		command_object = RtmpAmf0Any::object();
 		// optional
 		args = NULL;
 	}
@@ -150,8 +150,8 @@ namespace RTMP
 
 			// see: https://github.com/ossrs/srs/issues/186
 			// the args maybe any amf0, for instance, a string. we should drop if not object.
-			SrsAmf0Any* any = NULL;
-			if ((err = SrsAmf0Any::discovery(stream, &any)) != srs_success)
+			RtmpAmf0Any* any = NULL;
+			if ((err = RtmpAmf0Any::discovery(stream, &any)) != srs_success)
 			{
 				return srs_error_wrap(err, "args");
 			}
@@ -193,12 +193,12 @@ namespace RTMP
 	{
 		int size = 0;
 
-		size += SrsAmf0Size::str(command_name);
-		size += SrsAmf0Size::number();
-		size += SrsAmf0Size::object(command_object);
+		size += RtmpAmf0Size::str(command_name);
+		size += RtmpAmf0Size::number();
+		size += RtmpAmf0Size::object(command_object);
 		if (args)
 		{
-			size += SrsAmf0Size::object(args);
+			size += RtmpAmf0Size::object(args);
 		}
 
 		return size;
@@ -235,8 +235,8 @@ namespace RTMP
 	{
 		command_name   = RTMP_AMF0_COMMAND_RESULT;
 		transaction_id = 1;
-		props          = SrsAmf0Any::object();
-		info           = SrsAmf0Any::object();
+		props          = RtmpAmf0Any::object();
+		info           = RtmpAmf0Any::object();
 	}
 
 	RtmpConnectAppResPacket::~RtmpConnectAppResPacket()
@@ -273,7 +273,7 @@ namespace RTMP
 		// @see https://github.com/ossrs/srs/issues/418
 		if (!stream->empty())
 		{
-			SrsAmf0Any* p = NULL;
+			RtmpAmf0Any* p = NULL;
 			if ((err = srs_amf0_read_any(stream, &p)) != srs_success)
 			{
 				return srs_error_wrap(err, "args");
@@ -312,8 +312,8 @@ namespace RTMP
 
 	int RtmpConnectAppResPacket::get_size()
 	{
-		return SrsAmf0Size::str(command_name) + SrsAmf0Size::number() + SrsAmf0Size::object(props) +
-		       SrsAmf0Size::object(info);
+		return RtmpAmf0Size::str(command_name) + RtmpAmf0Size::number() + RtmpAmf0Size::object(props) +
+		       RtmpAmf0Size::object(info);
 	}
 
 	srs_error_t RtmpConnectAppResPacket::encode_packet(Utils::RtmpBuffer* stream)
@@ -376,7 +376,7 @@ namespace RTMP
 		}
 
 		FREEP(command_object);
-		if ((err = SrsAmf0Any::discovery(stream, &command_object)) != srs_success)
+		if ((err = RtmpAmf0Any::discovery(stream, &command_object)) != srs_success)
 		{
 			return srs_error_wrap(err, "discovery command_object");
 		}
@@ -388,7 +388,7 @@ namespace RTMP
 		if (!stream->empty())
 		{
 			FREEP(arguments);
-			if ((err = SrsAmf0Any::discovery(stream, &arguments)) != srs_success)
+			if ((err = RtmpAmf0Any::discovery(stream, &arguments)) != srs_success)
 			{
 				return srs_error_wrap(err, "discovery args");
 			}
@@ -415,7 +415,7 @@ namespace RTMP
 	{
 		int size = 0;
 
-		size += SrsAmf0Size::str(command_name) + SrsAmf0Size::number();
+		size += RtmpAmf0Size::str(command_name) + RtmpAmf0Size::number();
 
 		if (command_object)
 		{
@@ -485,7 +485,7 @@ namespace RTMP
 	{
 		int size = 0;
 
-		size += SrsAmf0Size::str(command_name) + SrsAmf0Size::number();
+		size += RtmpAmf0Size::str(command_name) + RtmpAmf0Size::number();
 
 		if (command_object)
 		{
@@ -531,7 +531,7 @@ namespace RTMP
 	{
 		command_name   = RTMP_AMF0_COMMAND_CREATE_STREAM;
 		transaction_id = 2;
-		command_object = SrsAmf0Any::null();
+		command_object = RtmpAmf0Any::null();
 	}
 
 	RtmpCreateStreamPacket::~RtmpCreateStreamPacket()
@@ -539,7 +539,7 @@ namespace RTMP
 		FREEP(command_object);
 	}
 
-	void RtmpCreateStreamPacket::set_command_object(SrsAmf0Any* v)
+	void RtmpCreateStreamPacket::set_command_object(RtmpAmf0Any* v)
 	{
 		FREEP(command_object);
 		command_object = v;
@@ -583,7 +583,7 @@ namespace RTMP
 
 	int RtmpCreateStreamPacket::get_size()
 	{
-		return SrsAmf0Size::str(command_name) + SrsAmf0Size::number() + SrsAmf0Size::null();
+		return RtmpAmf0Size::str(command_name) + RtmpAmf0Size::number() + RtmpAmf0Size::null();
 	}
 
 	srs_error_t RtmpCreateStreamPacket::encode_packet(Utils::RtmpBuffer* stream)
@@ -612,7 +612,7 @@ namespace RTMP
 	{
 		command_name   = RTMP_AMF0_COMMAND_RESULT;
 		transaction_id = _transaction_id;
-		command_object = SrsAmf0Any::null();
+		command_object = RtmpAmf0Any::null();
 		stream_id      = _stream_id;
 	}
 
@@ -664,8 +664,8 @@ namespace RTMP
 
 	int RtmpCreateStreamResPacket::get_size()
 	{
-		return SrsAmf0Size::str(command_name) + SrsAmf0Size::number() + SrsAmf0Size::null() +
-		       SrsAmf0Size::number();
+		return RtmpAmf0Size::str(command_name) + RtmpAmf0Size::number() + RtmpAmf0Size::null() +
+		       RtmpAmf0Size::number();
 	}
 
 	srs_error_t RtmpCreateStreamResPacket::encode_packet(Utils::RtmpBuffer* stream)
@@ -699,7 +699,7 @@ namespace RTMP
 	{
 		command_name   = RTMP_AMF0_COMMAND_CLOSE_STREAM;
 		transaction_id = 0;
-		command_object = SrsAmf0Any::null();
+		command_object = RtmpAmf0Any::null();
 	}
 
 	RtmpCloseStreamPacket::~RtmpCloseStreamPacket()
@@ -733,7 +733,7 @@ namespace RTMP
 	{
 		command_name   = RTMP_AMF0_COMMAND_RELEASE_STREAM;
 		transaction_id = 0;
-		command_object = SrsAmf0Any::null();
+		command_object = RtmpAmf0Any::null();
 	}
 
 	RtmpFMLEStartPacket::~RtmpFMLEStartPacket()
@@ -741,7 +741,7 @@ namespace RTMP
 		FREEP(command_object);
 	}
 
-	void RtmpFMLEStartPacket::set_command_object(SrsAmf0Any* v)
+	void RtmpFMLEStartPacket::set_command_object(RtmpAmf0Any* v)
 	{
 		FREEP(command_object);
 		command_object = v;
@@ -794,8 +794,8 @@ namespace RTMP
 
 	int RtmpFMLEStartPacket::get_size()
 	{
-		return SrsAmf0Size::str(command_name) + SrsAmf0Size::number() + SrsAmf0Size::null() +
-		       SrsAmf0Size::str(stream_name);
+		return RtmpAmf0Size::str(command_name) + RtmpAmf0Size::number() + RtmpAmf0Size::null() +
+		       RtmpAmf0Size::str(stream_name);
 	}
 
 	srs_error_t RtmpFMLEStartPacket::encode_packet(Utils::RtmpBuffer* stream)
@@ -851,8 +851,8 @@ namespace RTMP
 	{
 		command_name   = RTMP_AMF0_COMMAND_RESULT;
 		transaction_id = _transaction_id;
-		command_object = SrsAmf0Any::null();
-		args           = SrsAmf0Any::undefined();
+		command_object = RtmpAmf0Any::null();
+		args           = RtmpAmf0Any::undefined();
 	}
 
 	RtmpFMLEStartResPacket::~RtmpFMLEStartResPacket()
@@ -861,13 +861,13 @@ namespace RTMP
 		FREEP(args);
 	}
 
-	void RtmpFMLEStartResPacket::set_args(SrsAmf0Any* v)
+	void RtmpFMLEStartResPacket::set_args(RtmpAmf0Any* v)
 	{
 		FREEP(args);
 		args = v;
 	}
 
-	void RtmpFMLEStartResPacket::set_command_object(SrsAmf0Any* v)
+	void RtmpFMLEStartResPacket::set_command_object(RtmpAmf0Any* v)
 	{
 		FREEP(command_object);
 		command_object = v;
@@ -916,8 +916,8 @@ namespace RTMP
 
 	int RtmpFMLEStartResPacket::get_size()
 	{
-		return SrsAmf0Size::str(command_name) + SrsAmf0Size::number() + SrsAmf0Size::null() +
-		       SrsAmf0Size::undefined();
+		return RtmpAmf0Size::str(command_name) + RtmpAmf0Size::number() + RtmpAmf0Size::null() +
+		       RtmpAmf0Size::undefined();
 	}
 
 	srs_error_t RtmpFMLEStartResPacket::encode_packet(Utils::RtmpBuffer* stream)
@@ -951,7 +951,7 @@ namespace RTMP
 	{
 		command_name   = RTMP_AMF0_COMMAND_PUBLISH;
 		transaction_id = 0;
-		command_object = SrsAmf0Any::null();
+		command_object = RtmpAmf0Any::null();
 		type           = "live";
 	}
 
@@ -960,7 +960,7 @@ namespace RTMP
 		FREEP(command_object);
 	}
 
-	void RtmpPublishPacket::set_command_object(SrsAmf0Any* v)
+	void RtmpPublishPacket::set_command_object(RtmpAmf0Any* v)
 	{
 		FREEP(command_object);
 		command_object = v;
@@ -1014,8 +1014,8 @@ namespace RTMP
 
 	int RtmpPublishPacket::get_size()
 	{
-		return SrsAmf0Size::str(command_name) + SrsAmf0Size::number() + SrsAmf0Size::null() +
-		       SrsAmf0Size::str(stream_name) + SrsAmf0Size::str(type);
+		return RtmpAmf0Size::str(command_name) + RtmpAmf0Size::number() + RtmpAmf0Size::null() +
+		       RtmpAmf0Size::str(stream_name) + RtmpAmf0Size::str(type);
 	}
 
 	srs_error_t RtmpPublishPacket::encode_packet(Utils::RtmpBuffer* stream)
@@ -1054,7 +1054,7 @@ namespace RTMP
 	{
 		command_name   = RTMP_AMF0_COMMAND_PAUSE;
 		transaction_id = 0;
-		command_object = SrsAmf0Any::null();
+		command_object = RtmpAmf0Any::null();
 
 		time_ms  = 0;
 		is_pause = true;
@@ -1105,7 +1105,7 @@ namespace RTMP
 	{
 		command_name   = RTMP_AMF0_COMMAND_PLAY;
 		transaction_id = 0;
-		command_object = SrsAmf0Any::null();
+		command_object = RtmpAmf0Any::null();
 
 		start    = -2;
 		duration = -1;
@@ -1159,12 +1159,12 @@ namespace RTMP
 			return err;
 		}
 
-		SrsAmf0Any* reset_value = NULL;
+		RtmpAmf0Any* reset_value = NULL;
 		if ((err = srs_amf0_read_any(stream, &reset_value)) != srs_success)
 		{
 			return srs_error_wrap(err, "reset");
 		}
-		std::unique_ptr<SrsAmf0Any> reset_valuePtr{ reset_value };
+		std::unique_ptr<RtmpAmf0Any> reset_valuePtr{ reset_value };
 
 		if (reset_value)
 		{
@@ -1201,22 +1201,22 @@ namespace RTMP
 
 	int RtmpPlayPacket::get_size()
 	{
-		int size = SrsAmf0Size::str(command_name) + SrsAmf0Size::number() + SrsAmf0Size::null() +
-		           SrsAmf0Size::str(stream_name);
+		int size = RtmpAmf0Size::str(command_name) + RtmpAmf0Size::number() + RtmpAmf0Size::null() +
+		           RtmpAmf0Size::str(stream_name);
 
 		if (start != -2 || duration != -1 || !reset)
 		{
-			size += SrsAmf0Size::number();
+			size += RtmpAmf0Size::number();
 		}
 
 		if (duration != -1 || !reset)
 		{
-			size += SrsAmf0Size::number();
+			size += RtmpAmf0Size::number();
 		}
 
 		if (!reset)
 		{
-			size += SrsAmf0Size::boolean();
+			size += RtmpAmf0Size::boolean();
 		}
 
 		return size;
@@ -1268,8 +1268,8 @@ namespace RTMP
 	{
 		command_name   = RTMP_AMF0_COMMAND_RESULT;
 		transaction_id = 0;
-		command_object = SrsAmf0Any::null();
-		desc           = SrsAmf0Any::object();
+		command_object = RtmpAmf0Any::null();
+		desc           = RtmpAmf0Any::object();
 	}
 
 	RtmpPlayResPacket::~RtmpPlayResPacket()
@@ -1278,13 +1278,13 @@ namespace RTMP
 		FREEP(desc);
 	}
 
-	void RtmpPlayResPacket::set_command_object(SrsAmf0Any* v)
+	void RtmpPlayResPacket::set_command_object(RtmpAmf0Any* v)
 	{
 		FREEP(command_object);
 		command_object = v;
 	}
 
-	void RtmpPlayResPacket::set_desc(SrsAmf0Object* v)
+	void RtmpPlayResPacket::set_desc(RtmpAmf0Object* v)
 	{
 		FREEP(desc);
 		desc = v;
@@ -1302,8 +1302,8 @@ namespace RTMP
 
 	int RtmpPlayResPacket::get_size()
 	{
-		return SrsAmf0Size::str(command_name) + SrsAmf0Size::number() + SrsAmf0Size::null() +
-		       SrsAmf0Size::object(desc);
+		return RtmpAmf0Size::str(command_name) + RtmpAmf0Size::number() + RtmpAmf0Size::null() +
+		       RtmpAmf0Size::object(desc);
 	}
 
 	srs_error_t RtmpPlayResPacket::encode_packet(Utils::RtmpBuffer* stream)
@@ -1337,7 +1337,7 @@ namespace RTMP
 	{
 		command_name   = RTMP_AMF0_COMMAND_ON_BW_DONE;
 		transaction_id = 0;
-		args           = SrsAmf0Any::null();
+		args           = RtmpAmf0Any::null();
 	}
 
 	RtmpOnBWDonePacket::~RtmpOnBWDonePacket()
@@ -1345,7 +1345,7 @@ namespace RTMP
 		FREEP(args);
 	}
 
-	void RtmpOnBWDonePacket::set_args(SrsAmf0Any* v)
+	void RtmpOnBWDonePacket::set_args(RtmpAmf0Any* v)
 	{
 		FREEP(args);
 		args = v;
@@ -1363,7 +1363,7 @@ namespace RTMP
 
 	int RtmpOnBWDonePacket::get_size()
 	{
-		return SrsAmf0Size::str(command_name) + SrsAmf0Size::number() + SrsAmf0Size::null();
+		return RtmpAmf0Size::str(command_name) + RtmpAmf0Size::number() + RtmpAmf0Size::null();
 	}
 
 	srs_error_t RtmpOnBWDonePacket::encode_packet(Utils::RtmpBuffer* stream)
@@ -1392,8 +1392,8 @@ namespace RTMP
 	{
 		command_name   = RTMP_AMF0_COMMAND_ON_STATUS;
 		transaction_id = 0;
-		args           = SrsAmf0Any::null();
-		data           = SrsAmf0Any::object();
+		args           = RtmpAmf0Any::null();
+		data           = RtmpAmf0Any::object();
 	}
 
 	RtmpOnStatusCallPacket::~RtmpOnStatusCallPacket()
@@ -1402,13 +1402,13 @@ namespace RTMP
 		FREEP(data);
 	}
 
-	void RtmpOnStatusCallPacket::set_args(SrsAmf0Any* v)
+	void RtmpOnStatusCallPacket::set_args(RtmpAmf0Any* v)
 	{
 		FREEP(args);
 		args = v;
 	}
 
-	void RtmpOnStatusCallPacket::set_data(SrsAmf0Object* v)
+	void RtmpOnStatusCallPacket::set_data(RtmpAmf0Object* v)
 	{
 		FREEP(data);
 		data = v;
@@ -1426,8 +1426,8 @@ namespace RTMP
 
 	int RtmpOnStatusCallPacket::get_size()
 	{
-		return SrsAmf0Size::str(command_name) + SrsAmf0Size::number() + SrsAmf0Size::null() +
-		       SrsAmf0Size::object(data);
+		return RtmpAmf0Size::str(command_name) + RtmpAmf0Size::number() + RtmpAmf0Size::null() +
+		       RtmpAmf0Size::object(data);
 	}
 
 	srs_error_t RtmpOnStatusCallPacket::encode_packet(Utils::RtmpBuffer* stream)
@@ -1460,7 +1460,7 @@ namespace RTMP
 	RtmpOnStatusDataPacket::RtmpOnStatusDataPacket()
 	{
 		command_name = RTMP_AMF0_COMMAND_ON_STATUS;
-		data         = SrsAmf0Any::object();
+		data         = RtmpAmf0Any::object();
 	}
 
 	RtmpOnStatusDataPacket::~RtmpOnStatusDataPacket()
@@ -1468,7 +1468,7 @@ namespace RTMP
 		FREEP(data);
 	}
 
-	void RtmpOnStatusDataPacket::set_data(SrsAmf0Object* v)
+	void RtmpOnStatusDataPacket::set_data(RtmpAmf0Object* v)
 	{
 		FREEP(data);
 		data = v;
@@ -1486,7 +1486,7 @@ namespace RTMP
 
 	int RtmpOnStatusDataPacket::get_size()
 	{
-		return SrsAmf0Size::str(command_name) + SrsAmf0Size::object(data);
+		return RtmpAmf0Size::str(command_name) + RtmpAmf0Size::object(data);
 	}
 
 	srs_error_t RtmpOnStatusDataPacket::encode_packet(Utils::RtmpBuffer* stream)
@@ -1529,7 +1529,7 @@ namespace RTMP
 
 	int RtmpSampleAccessPacket::get_size()
 	{
-		return SrsAmf0Size::str(command_name) + SrsAmf0Size::boolean() + SrsAmf0Size::boolean();
+		return RtmpAmf0Size::str(command_name) + RtmpAmf0Size::boolean() + RtmpAmf0Size::boolean();
 	}
 
 	srs_error_t RtmpSampleAccessPacket::encode_packet(Utils::RtmpBuffer* stream)
@@ -1557,7 +1557,7 @@ namespace RTMP
 	RtmpOnMetaDataPacket::RtmpOnMetaDataPacket()
 	{
 		name     = SRS_CONSTS_RTMP_ON_METADATA;
-		metadata = SrsAmf0Any::object();
+		metadata = RtmpAmf0Any::object();
 	}
 
 	RtmpOnMetaDataPacket::~RtmpOnMetaDataPacket()
@@ -1565,7 +1565,7 @@ namespace RTMP
 		FREEP(metadata);
 	}
 
-	void RtmpOnMetaDataPacket::set_metadata(SrsAmf0Object* v)
+	void RtmpOnMetaDataPacket::set_metadata(RtmpAmf0Object* v)
 	{
 		FREEP(metadata);
 		metadata = v;
@@ -1596,7 +1596,7 @@ namespace RTMP
 		}
 
 		// the metadata maybe object or ecma array
-		SrsAmf0Any* any = NULL;
+		RtmpAmf0Any* any = NULL;
 		if ((err = srs_amf0_read_any(stream, &any)) != srs_success)
 		{
 			return srs_error_wrap(err, "metadata");
@@ -1610,11 +1610,11 @@ namespace RTMP
 			return err;
 		}
 
-		std::unique_ptr<SrsAmf0Any> anyPtr{ any };
+		std::unique_ptr<RtmpAmf0Any> anyPtr{ any };
 
 		if (any->is_ecma_array())
 		{
-			SrsAmf0EcmaArray* arr = any->to_ecma_array();
+			RtmpAmf0EcmaArray* arr = any->to_ecma_array();
 
 			// if ecma array, copy to object.
 			for (int i = 0; i < arr->count(); i++)
@@ -1638,7 +1638,7 @@ namespace RTMP
 
 	int RtmpOnMetaDataPacket::get_size()
 	{
-		return SrsAmf0Size::str(name) + SrsAmf0Size::object(metadata);
+		return RtmpAmf0Size::str(name) + RtmpAmf0Size::object(metadata);
 	}
 
 	srs_error_t RtmpOnMetaDataPacket::encode_packet(Utils::RtmpBuffer* stream)

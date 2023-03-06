@@ -62,6 +62,25 @@ namespace RTMP
 	// must format as key=value&...&keyN=valueN
 	void srs_parse_query_string(std::string q, std::map<std::string, std::string>& query);
 
+	// Generate the c0 chunk header for msg.
+	// @param cache, the cache to write header.
+	// @param nb_cache, the size of cache.
+	// @return The size of header. 0 if cache not enough.
+	int srs_chunk_header_c0(
+	  int perfer_cid,
+	  uint32_t timestamp,
+	  int32_t payload_length,
+	  int8_t message_type,
+	  int32_t stream_id,
+	  char* cache,
+	  int nb_cache);
+
+	// Generate the c3 chunk header for msg.
+	// @param cache, the cache to write header.
+	// @param nb_cache, the size of cache.
+	// @return the size of header. 0 if cache not enough.
+	int srs_chunk_header_c3(int perfer_cid, uint32_t timestamp, char* cache, int nb_cache);
+
 } // namespace RTMP
 
 #endif

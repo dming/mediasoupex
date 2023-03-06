@@ -50,7 +50,7 @@ namespace RTMP
 		// The token in the connect request,
 		// used for edge traverse to origin authentication,
 		// @see https://github.com/ossrs/srs/issues/104
-		SrsAmf0Object* args;
+		RtmpAmf0Object* args;
 
 	public:
 		RtmpRequest();
