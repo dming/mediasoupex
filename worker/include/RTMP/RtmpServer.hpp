@@ -4,6 +4,7 @@
 
 #include "RTMP/RtmpTcpServer.hpp"
 #include "RTMP/RtmpTransport.hpp"
+#include "RtmpRouter.hpp"
 #include "RTC/Shared.hpp"
 #include <map>
 #include <stdint.h>
@@ -29,9 +30,15 @@ namespace RTMP
 
 		/* Pure virtual methods inherited from RTMP::RtmpTcpServer::Listener. */
 	public:
+		RtmpTransport* CreateNewTransport() override;
 		void OnRtcTcpConnectionClosed(
 		  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTcpConnection* connection) override;
 		void OnRtmpTransportCreated(RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTransport* transport) override;
+
+	public:
+		RtmpRouter* FetchRouter(RtmpRequest* req);
+		RtmpRouter* FetchRouter(std::string streamUrl);
+		srs_error_t FetchOrCreateRouter(RtmpRequest* req, RtmpRouter** pps);
 
 	public:
 		// Passed by argument.
@@ -42,6 +49,7 @@ namespace RTMP
 		RTC::Shared* shared{ nullptr };
 		RTMP::RtmpTcpServer* tcpServer;
 		std::map<uint64_t, RTMP::RtmpTransport*> transports_;
+		std::map<std::string, RTMP::RtmpRouter*> routers_;
 	};
 } // namespace RTMP
 #endif

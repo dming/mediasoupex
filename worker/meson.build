@@ -164,17 +164,18 @@ common_sources = [
   'src/RTC/RTCP/XrReceiverReferenceTime.cpp',
   'src/RTMP/RtmpAmf0.cpp',
   'src/RTMP/RtmpHandshake.cpp',
+  'src/RTMP/RtmpHttp.cpp',
   'src/RTMP/RtmpJson.cpp',
   'src/RTMP/RtmpMessage.cpp',
   'src/RTMP/RtmpPacket.cpp',
-  'src/RTMP/RtmpHttp.cpp',
-  'src/RTMP/RtmpUtility.cpp',
   'src/RTMP/RtmpProtocol.cpp',
+  'src/RTMP/RtmpRouter.cpp',
   'src/RTMP/RtmpServer.cpp',
   'src/RTMP/RtmpTcpConnection.cpp',
   'src/RTMP/RtmpTcpServer.cpp',
   'src/RTMP/RtmpTransport.cpp',
   'src/RTMP/RtmpTransportManager.cpp',
+  'src/RTMP/RtmpUtility.cpp',
 ]
 
 cpp = meson.get_compiler('cpp')

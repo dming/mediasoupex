@@ -2,6 +2,7 @@
 #define MS_LOG_DEV_LEVEL 3
 
 #include "RTMP/RtmpServer.hpp"
+#include "CplxError.hpp"
 #include "Logger.hpp"
 #include "MediaSoupErrors.hpp"
 #include "Utils.hpp"
@@ -75,6 +76,11 @@ namespace RTMP
 		MS_TRACE();
 	}
 
+	inline RtmpTransport* RtmpServer::CreateNewTransport()
+	{
+		return new RtmpTransport(this);
+	}
+
 	inline void RtmpServer::OnRtcTcpConnectionClosed(
 	  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTcpConnection* connection)
 	{
@@ -84,8 +90,14 @@ namespace RTMP
 		if (transportIt != transports_.end())
 		{
 			transports_.erase(transportIt);
-			FREEP(transportIt->second);
+			RtmpTransport* transport = transportIt->second;
 			// [dming] TODO: need erase the transport in router
+			RtmpRouter* router = FetchRouter(transport->GetStreamUrl());
+			if (router)
+			{
+				router->RemoveTransport(transport);
+			}
+			FREEP(transport);
 		}
 	}
 
@@ -107,6 +119,64 @@ namespace RTMP
 		  connection->GetPeerPort());
 
 		transports_[tuple.hash] = transport;
+	}
+
+	RtmpRouter* RtmpServer::FetchRouter(RtmpRequest* req)
+	{
+		std::string streamUrl = req->get_stream_url();
+		return FetchRouter(streamUrl);
+	}
+
+	RtmpRouter* RtmpServer::FetchRouter(std::string streamUrl)
+	{
+		RtmpRouter* router = nullptr;
+		if (routers_.find(streamUrl) == routers_.end())
+		{
+			return nullptr;
+		}
+		router = routers_[streamUrl];
+		return router;
+	}
+
+	srs_error_t RtmpServer::FetchOrCreateRouter(RtmpRequest* req, RtmpRouter** pps)
+	{
+		srs_error_t err = srs_success;
+		// if (req->stream.empty())
+		// {
+		// 	return srs_error_new(ERROR_RTMP_STREAM_NAME_EMPTY, "rtmp: empty stream");
+		// }
+
+		RtmpRouter* router = nullptr;
+		if ((router = FetchRouter(req)) != nullptr)
+		{
+			// we always update the request of resource,
+			// for origin auth is on, the token in request maybe invalid,
+			// and we only need to update the token of request, it's simple.
+			// router->update_auth(r);
+			*pps = router;
+			return err;
+		}
+
+		std::string streamUrl = req->get_stream_url();
+		// should always not exists for create a source.
+		srs_assert(routers_.find(streamUrl) == routers_.end());
+
+		MS_DEBUG_DEV("new live Router, stream_url=%s", streamUrl.c_str());
+
+		router = new RtmpRouter();
+		if ((err = router->initualize(req)) != srs_success)
+		{
+			err = srs_error_wrap(err, "init Router %s", streamUrl.c_str());
+			goto failed;
+		}
+
+		routers_[streamUrl] = router;
+		*pps                = router;
+		return err;
+
+	failed:
+		FREEP(router);
+		return err;
 	}
 
 } // namespace RTMP

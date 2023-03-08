@@ -38,7 +38,7 @@ namespace RTMP
 		MS_DEBUG_DEV("UserOnTcpConnectionAlloc ");
 
 		// Allocate a new RTMP::RtmpTcpConnection for the RtmpTcpServer to handle it.
-		RTMP::RtmpTransport* transport = new RTMP::RtmpTransport();
+		RTMP::RtmpTransport* transport = this->listener->CreateNewTransport();
 
 		RTMP::RtmpTcpConnection* connection = transport->GetConnection();
 		// Accept it.

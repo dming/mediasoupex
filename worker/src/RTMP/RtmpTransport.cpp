@@ -2,8 +2,11 @@
 #define MS_LOG_DEV_LEVEL 3
 
 #include "RTMP/RtmpTransport.hpp"
+#include "CplxError.hpp"
 #include "Logger.hpp"
 #include "RTMP/RtmpHttp.hpp"
+#include "RTMP/RtmpRouter.hpp"
+#include "RTMP/RtmpServer.hpp"
 
 // FMLE
 #define RTMP_AMF0_COMMAND_ON_FC_PUBLISH "onFCPublish"
@@ -11,9 +14,9 @@
 
 namespace RTMP
 {
-	RtmpTransport::RtmpTransport()
-	  : connection(new RTMP::RtmpTcpConnection(this, 65535)), protocol(new RtmpProtocol()),
-	    info(new RtmpClientInfo())
+	RtmpTransport::RtmpTransport(RtmpServer* rtmpServer)
+	  : rtmpServer_(rtmpServer), connection_(new RTMP::RtmpTcpConnection(this, 65535)),
+	    protocol_(new RtmpProtocol()), info_(new RtmpClientInfo())
 	{
 		MS_TRACE();
 	}
@@ -22,9 +25,11 @@ namespace RTMP
 	{
 		MS_TRACE();
 
-		FREEP(info);
-		FREEP(protocol);
-		// connection will be free in TcpServerHandler::OnTcpConnectionClosed
+		// NOTE: connection will be free in TcpServerHandler::OnTcpConnectionClosed
+		FREEP(info_);
+		FREEP(protocol_);
+		connection_ = nullptr;
+		rtmpServer_ = nullptr;
 	}
 
 	void RtmpTransport::OnTcpConnectionPacketReceived(
@@ -57,7 +62,7 @@ namespace RTMP
 		RTMP::RtmpPacket* packet;
 		if (msg->header.is_amf0_command() || msg->header.is_amf3_command())
 		{
-			if ((err = protocol->decode_message(msg, &packet)) != srs_success)
+			if ((err = protocol_->decode_message(msg, &packet)) != srs_success)
 			{
 				return srs_error_wrap(err, "decode message");
 			}
@@ -69,7 +74,7 @@ namespace RTMP
 			else if (RtmpCreateStreamPacket* m_packet = dynamic_cast<RtmpCreateStreamPacket*>(packet))
 			{
 				MS_DEBUG_DEV("OnRecvMessage RtmpCreateStreamPacket ");
-				HandleRtmpCreateStreamPacket(m_packet);
+				return HandleRtmpCreateStreamPacket(m_packet);
 			}
 			else if (RtmpPlayPacket* m_packet = dynamic_cast<RtmpPlayPacket*>(packet))
 			{
@@ -100,14 +105,14 @@ namespace RTMP
 		}
 		else if (msg->header.is_amf0_data() || msg->header.is_amf3_data())
 		{
-			if ((err = protocol->decode_message(msg, &packet)) != srs_success)
+			if ((err = protocol_->decode_message(msg, &packet)) != srs_success)
 			{
 				return srs_error_wrap(err, "decode message");
 			}
 		}
 		else if (msg->header.is_user_control_message())
 		{
-			if ((err = protocol->decode_message(msg, &packet)) != srs_success)
+			if ((err = protocol_->decode_message(msg, &packet)) != srs_success)
 			{
 				return srs_error_wrap(err, "decode message");
 			}
@@ -115,7 +120,7 @@ namespace RTMP
 		}
 		else if (msg->header.is_window_ackledgement_size())
 		{
-			if ((err = protocol->decode_message(msg, &packet)) != srs_success)
+			if ((err = protocol_->decode_message(msg, &packet)) != srs_success)
 			{
 				return srs_error_wrap(err, "decode message");
 			}
@@ -123,7 +128,7 @@ namespace RTMP
 		}
 		else if (msg->header.is_ackledgement())
 		{
-			if ((err = protocol->decode_message(msg, &packet)) != srs_success)
+			if ((err = protocol_->decode_message(msg, &packet)) != srs_success)
 			{
 				return srs_error_wrap(err, "decode message");
 			}
@@ -131,7 +136,7 @@ namespace RTMP
 		}
 		else if (msg->header.is_set_chunk_size())
 		{
-			if ((err = protocol->decode_message(msg, &packet)) != srs_success)
+			if ((err = protocol_->decode_message(msg, &packet)) != srs_success)
 			{
 				return srs_error_wrap(err, "decode message");
 			}
@@ -143,9 +148,11 @@ namespace RTMP
 	srs_error_t RtmpTransport::HandleRtmpConnectAppPacket(RtmpConnectAppPacket* packet)
 	{
 		MS_TRACE();
+		srs_error_t err = srs_success;
+
 		RtmpAmf0Any* prop = NULL;
 
-		RtmpRequest* req = info->req;
+		RtmpRequest* req = info_->req;
 
 		if ((prop = packet->command_object->ensure_property_string("tcUrl")) == NULL)
 		{
@@ -186,11 +193,13 @@ namespace RTMP
 		  req->tcUrl, req->schema, req->host, req->vhost, req->app, req->stream, req->port, req->param);
 		req->strip();
 		MS_DEBUG_DEV(
-		  "[2] HandleRtmpConnectAppPacket schema=%s, stream=%s, app=%s",
+		  "[2] HandleRtmpConnectAppPacket schema=%s,  app=%s,stream=%s",
 		  req->schema.c_str(),
-		  req->stream.c_str(),
-		  req->app.c_str());
-		response_connect_app(req, connection->GetLocalIp().c_str());
+		  req->app.c_str(),
+		  req->stream.c_str());
+
+		response_connect_app(req, connection_->GetLocalIp().c_str());
+
 		return srs_success;
 	}
 
@@ -228,7 +237,7 @@ namespace RTMP
 		data->set("srs_pid", RtmpAmf0Any::number(getpid()));
 		// data->set("srs_id", RtmpAmf0Any::str(_srs_context->get_id().c_str()));
 
-		if ((err = connection->send_and_free_packet(pkt, 0)) != srs_success)
+		if ((err = connection_->send_and_free_packet(pkt, 0)) != srs_success)
 		{
 			return srs_error_wrap(err, "send connect app response");
 		}
@@ -240,8 +249,8 @@ namespace RTMP
 	{
 		srs_error_t err = srs_success;
 
-		RtmpRequest* req = info->req;
-		info->type       = SrsRtmpConnFMLEPublish;
+		RtmpRequest* req = info_->req;
+		info_->type      = SrsRtmpConnFMLEPublish;
 		req->stream      = packet->stream_name;
 		MS_DEBUG_DEV(
 		  "HandleRtmpFMLEStartPacket command=%s, transaction_id=%f, stream = %s",
@@ -251,7 +260,7 @@ namespace RTMP
 
 		{
 			RtmpFMLEStartResPacket* pkt = new RtmpFMLEStartResPacket(packet->transaction_id);
-			if ((err = connection->send_and_free_packet(pkt, 0)) != srs_success)
+			if ((err = connection_->send_and_free_packet(pkt, 0)) != srs_success)
 			{
 				return srs_error_wrap(err, "send releaseStream response");
 			}
@@ -267,8 +276,8 @@ namespace RTMP
 		if (true)
 		{
 			RtmpCreateStreamResPacket* pkt =
-			  new RtmpCreateStreamResPacket(packet->transaction_id, info->res->stream_id);
-			if ((err = connection->send_and_free_packet(pkt, 0)) != srs_success)
+			  new RtmpCreateStreamResPacket(packet->transaction_id, info_->res->stream_id);
+			if ((err = connection_->send_and_free_packet(pkt, 0)) != srs_success)
 			{
 				return srs_error_wrap(err, "send createStream response");
 			}
@@ -279,6 +288,7 @@ namespace RTMP
 	srs_error_t RtmpTransport::HandleRtmpPublishPacket(RtmpPublishPacket* packet)
 	{
 		srs_error_t err = srs_success;
+
 		// publish response onFCPublish(NetStream.Publish.Start)
 		if (true)
 		{
@@ -288,7 +298,7 @@ namespace RTMP
 			pkt->data->set(StatusCode, RtmpAmf0Any::str(StatusCodePublishStart));
 			pkt->data->set(StatusDescription, RtmpAmf0Any::str("Started publishing stream."));
 
-			if ((err = connection->send_and_free_packet(pkt, info->res->stream_id)) != srs_success)
+			if ((err = connection_->send_and_free_packet(pkt, info_->res->stream_id)) != srs_success)
 			{
 				return srs_error_wrap(err, "send NetStream.Publish.Start");
 			}
@@ -303,14 +313,21 @@ namespace RTMP
 			pkt->data->set(StatusDescription, RtmpAmf0Any::str("Started publishing stream."));
 			pkt->data->set(StatusClientId, RtmpAmf0Any::str(RTMP_SIG_CLIENT_ID));
 
-			if ((err = connection->send_and_free_packet(pkt, info->res->stream_id)) != srs_success)
+			if ((err = connection_->send_and_free_packet(pkt, info_->res->stream_id)) != srs_success)
 			{
 				return srs_error_wrap(err, "send NetStream.Publish.Start");
 			}
 		}
 
-		connection->b_showDebugLog = false;
+		connection_->b_showDebugLog = false;
+
 		// [dming] 到这里就完成publish的前期工作，进入直播流音视频和数据推送
+		RtmpRouter* router = nullptr;
+		if ((err = rtmpServer_->FetchOrCreateRouter(info_->req, &router)) != srs_success)
+		{
+			return srs_error_wrap(err, "rtmp: fetch router");
+		}
+		router->AddTransport(this);
 		return err;
 	}
 } // namespace RTMP

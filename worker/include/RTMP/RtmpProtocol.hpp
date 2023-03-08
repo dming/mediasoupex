@@ -130,6 +130,12 @@ namespace RTMP
 	public:
 		RtmpClientInfo();
 		virtual ~RtmpClientInfo();
+
+		bool IsPublisher()
+		{
+			return type == SrsRtmpConnFMLEPublish || type == SrsRtmpConnFlashPublish ||
+			       type == SrsRtmpConnHaivisionPublish;
+		}
 	};
 
 	class RtmpProtocol

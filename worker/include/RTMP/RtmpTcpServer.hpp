@@ -20,6 +20,7 @@ namespace RTMP
 			virtual ~Listener() = default;
 
 		public:
+			virtual RtmpTransport* CreateNewTransport() = 0;
 			virtual void OnRtcTcpConnectionClosed(
 			  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTcpConnection* connection) = 0;
 			virtual void OnRtmpTransportCreated(

@@ -12,8 +12,10 @@
 #include "RTMP/RtmpProtocol.hpp"
 #include "RTMP/RtmpTcpConnection.hpp"
 #include "RTC/TransportTuple.hpp"
+
 namespace RTMP
 {
+	class RtmpServer;
 	/**
 	 * RtmpTransport
 	 * 对应的是RtcTransport，作用包括：
@@ -25,7 +27,7 @@ namespace RTMP
 	class RtmpTransport : public RTMP::RtmpTcpConnection::Listener
 	{
 	public:
-		RtmpTransport();
+		RtmpTransport(RtmpServer* rtmpServer);
 		~RtmpTransport();
 
 		/* Pure virtual methods inherited from RTMP::RtmpTcpConnection::Listener. */
@@ -36,7 +38,15 @@ namespace RTMP
 	public:
 		RtmpTcpConnection* GetConnection()
 		{
-			return connection;
+			return connection_;
+		}
+		bool IsPublisher()
+		{
+			return info_->IsPublisher();
+		}
+		std::string GetStreamUrl()
+		{
+			return info_->req->get_stream_url();
 		}
 
 	private:
@@ -50,11 +60,12 @@ namespace RTMP
 		srs_error_t response_connect_app(RtmpRequest* req, const char* server_ip);
 
 	private:
-		RtmpTcpConnection* connection;
-		RtmpProtocol* protocol;
+		RtmpTcpConnection* connection_;
+		RtmpProtocol* protocol_;
 		// TODO: 增加SrsClientInfo保存客户端信息
 		// About the rtmp client.
-		RtmpClientInfo* info;
+		RtmpClientInfo* info_;
+		RtmpServer* rtmpServer_;
 	};
 } // namespace RTMP
 #endif
