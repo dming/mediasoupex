@@ -70,7 +70,7 @@ using PayloadChannelWriteFn  = void (*)(
 	if (p)                                                                                           \
 	{                                                                                                \
 		delete p;                                                                                      \
-		p = NULL;                                                                                      \
+		p = nullptr;                                                                                   \
 	}                                                                                                \
 	(void)0
 // Please use the freepa(T[]) to free an array, otherwise the behavior is undefined.
@@ -78,6 +78,6 @@ using PayloadChannelWriteFn  = void (*)(
 	if (pa)                                                                                          \
 	{                                                                                                \
 		delete[] pa;                                                                                   \
-		pa = NULL;                                                                                     \
+		pa = nullptr;                                                                                  \
 	}                                                                                                \
 	(void)0

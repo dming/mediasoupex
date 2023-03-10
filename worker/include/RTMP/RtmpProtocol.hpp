@@ -160,7 +160,7 @@ namespace RTMP
 	public:
 		// Decode bytes oriented RTMP message to RTMP packet,
 		// @param ppacket, output decoded packet,
-		//       always NULL if error, never NULL if success.
+		//       always nullptr if error, never nullptr if success.
 		// @return error when unknown packet, error when decode failed.
 		virtual srs_error_t decode_message(RtmpCommonMessage* msg, RtmpPacket** ppacket);
 		// When message sentout, update the context.
@@ -173,7 +173,7 @@ namespace RTMP
 
 		void print_debug_info();
 
-	private:
+	public:
 		// The requests sent out, used to build the response.
 		// key: transactionId
 		// value: the request command name

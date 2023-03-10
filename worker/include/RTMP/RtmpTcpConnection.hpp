@@ -37,29 +37,29 @@ namespace RTMP
 		void UserOnTcpConnectionRead() override;
 
 	private:
-		int RecvInterlacedMessage(RtmpCommonMessage** pmsg);
-		int ReadBasicHeader(char& fmt, int& cid, int& bhLen);
-		int ReadMessageHeader(RtmpChunkStream* chunk, char fmt, int bhLen);
-		int ReadMessagePayload(RtmpChunkStream* chunk, RtmpCommonMessage** pmsg);
+		srs_error_t RecvInterlacedMessage(RtmpCommonMessage** pmsg);
+		srs_error_t ReadBasicHeader(char& fmt, int& cid, int& bhLen);
+		srs_error_t ReadMessageHeader(RtmpChunkStream* chunk, char fmt, int bhLen);
+		srs_error_t ReadMessagePayload(RtmpChunkStream* chunk, RtmpCommonMessage** pmsg);
 
 	public:
 		// Send the RTMP message and always free it.
 		// user must never free or use the msg after this method,
 		// For it will always free the msg.
-		// @param msg, the msg to send out, never be NULL.
+		// @param msg, the msg to send out, never be nullptr.
 		// @param stream_id, the stream id of packet to send over, 0 for control message.
 		virtual srs_error_t send_and_free_message(RtmpSharedPtrMessage* msg, int stream_id);
 		// Send the RTMP message and always free it.
 		// user must never free or use the msg after this method,
 		// For it will always free the msg.
-		// @param msgs, the msgs to send out, never be NULL.
+		// @param msgs, the msgs to send out, never be nullptr.
 		// @param nb_msgs, the size of msgs to send out.
 		// @param stream_id, the stream id of packet to send over, 0 for control message.
 		virtual srs_error_t send_and_free_messages(RtmpSharedPtrMessage** msgs, int nb_msgs, int stream_id);
 		// Send the RTMP packet and always free it.
 		// user must never free or use the packet after this method,
 		// For it will always free the packet.
-		// @param packet, the packet to send out, never be NULL.
+		// @param packet, the packet to send out, never be nullptr.
 		// @param stream_id, the stream id of packet to send over, 0 for control message.
 		virtual srs_error_t send_and_free_packet(RtmpPacket* packet, int stream_id);
 

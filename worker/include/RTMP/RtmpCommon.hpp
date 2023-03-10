@@ -1,3 +1,6 @@
+#ifndef MS_RTMP_COMMON_HPP
+#define MS_RTMP_COMMON_HPP
+
 /**
  * how many chunk stream to cache, [0, N].
  * to imporove about 10% performance when chunk size small, and 5% for large chunk.
@@ -16,3 +19,5 @@
 ///////////////////////////////////////////////////////////
 #define SRS_CONSTS_RTMP_SET_DATAFRAME "@setDataFrame"
 #define SRS_CONSTS_RTMP_ON_METADATA "onMetaData"
+
+#endif

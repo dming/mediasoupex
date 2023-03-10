@@ -110,10 +110,10 @@ namespace RTMP
 		// Command information object which has the name-value pairs.
 		// @remark: alloc in packet constructor, user can directly use it,
 		//       user should never alloc it again which will cause memory leak.
-		// @remark, never be NULL.
+		// @remark, never be nullptr.
 		RtmpAmf0Object* command_object;
 		// Any optional information
-		// @remark, optional, init to and maybe NULL.
+		// @remark, optional, init to and maybe nullptr.
 		RtmpAmf0Object* args;
 
 	public:
@@ -140,11 +140,11 @@ namespace RTMP
 		// Transaction ID is 1 for call connect responses
 		double transaction_id;
 		// Name-value pairs that describe the properties(fmsver etc.) of the connection.
-		// @remark, never be NULL.
+		// @remark, never be nullptr.
 		RtmpAmf0Object* props;
 		// Name-value pairs that describe the response from|the server. 'code',
 		// 'level', 'description' are names of few among such information.
-		// @remark, never be NULL.
+		// @remark, never be nullptr.
 		RtmpAmf0Object* info;
 
 	public:
@@ -176,10 +176,10 @@ namespace RTMP
 		double transaction_id;
 		// If there exists any command info this
 		// is set, else this is set to null type.
-		// @remark, optional, init to and maybe NULL.
+		// @remark, optional, init to and maybe nullptr.
 		RtmpAmf0Any* command_object;
 		// Any optional arguments to be provided
-		// @remark, optional, init to and maybe NULL.
+		// @remark, optional, init to and maybe nullptr.
 		RtmpAmf0Any* arguments;
 
 	public:
@@ -206,10 +206,10 @@ namespace RTMP
 		// ID of the command, to which the response belongs to
 		double transaction_id;
 		// If there exists any command info this is set, else this is set to null type.
-		// @remark, optional, init to and maybe NULL.
+		// @remark, optional, init to and maybe nullptr.
 		RtmpAmf0Any* command_object;
 		// Response from the method that was called.
-		// @remark, optional, init to and maybe NULL.
+		// @remark, optional, init to and maybe nullptr.
 		RtmpAmf0Any* response;
 
 	public:
@@ -238,7 +238,7 @@ namespace RTMP
 		// Transaction ID of the command.
 		double transaction_id;
 		// If there exists any command info this is set, else this is set to null type.
-		// @remark, never be NULL, an AMF0 null instance.
+		// @remark, never be nullptr, an AMF0 null instance.
 		RtmpAmf0Any* command_object; // null
 	public:
 		RtmpCreateStreamPacket();
@@ -267,7 +267,7 @@ namespace RTMP
 		// ID of the command that response belongs to.
 		double transaction_id;
 		// If there exists any command info this is set, else this is set to null type.
-		// @remark, never be NULL, an AMF0 null instance.
+		// @remark, never be nullptr, an AMF0 null instance.
 		RtmpAmf0Any* command_object; // null
 		// The return value is either a stream ID or an error information object.
 		double stream_id;
@@ -297,7 +297,7 @@ namespace RTMP
 		// Transaction ID set to 0.
 		double transaction_id;
 		// Command information object does not exist. Set to null type.
-		// @remark, never be NULL, an AMF0 null instance.
+		// @remark, never be nullptr, an AMF0 null instance.
 		RtmpAmf0Any* command_object; // null
 	public:
 		RtmpCloseStreamPacket();
@@ -316,7 +316,7 @@ namespace RTMP
 		// The transaction ID to get the response.
 		double transaction_id;
 		// If there exists any command info this is set, else this is set to null type.
-		// @remark, never be NULL, an AMF0 null instance.
+		// @remark, never be nullptr, an AMF0 null instance.
 		RtmpAmf0Any* command_object; // null
 		// The stream name to start publish or release.
 		std::string stream_name;
@@ -352,10 +352,10 @@ namespace RTMP
 		// The transaction ID to get the response.
 		double transaction_id;
 		// If there exists any command info this is set, else this is set to null type.
-		// @remark, never be NULL, an AMF0 null instance.
+		// @remark, never be nullptr, an AMF0 null instance.
 		RtmpAmf0Any* command_object; // null
 		// The optional args, set to undefined.
-		// @remark, never be NULL, an AMF0 undefined instance.
+		// @remark, never be nullptr, an AMF0 undefined instance.
 		RtmpAmf0Any* args; // undefined
 	public:
 		RtmpFMLEStartResPacket(double _transaction_id);
@@ -390,7 +390,7 @@ namespace RTMP
 		// Transaction ID set to 0.
 		double transaction_id;
 		// Command information object does not exist. Set to null type.
-		// @remark, never be NULL, an AMF0 null instance.
+		// @remark, never be nullptr, an AMF0 null instance.
 		RtmpAmf0Any* command_object; // null
 		// Name with which the stream is published.
 		std::string stream_name;
@@ -436,7 +436,7 @@ namespace RTMP
 		// There is no transaction ID for this command. Set to 0.
 		double transaction_id;
 		// Command information object does not exist. Set to null type.
-		// @remark, never be NULL, an AMF0 null instance.
+		// @remark, never be nullptr, an AMF0 null instance.
 		RtmpAmf0Any* command_object; // null
 		// true or false, to indicate pausing or resuming play
 		bool is_pause;
@@ -464,7 +464,7 @@ namespace RTMP
 		// Transaction ID set to 0.
 		double transaction_id;
 		// Command information does not exist. Set to null type.
-		// @remark, never be NULL, an AMF0 null instance.
+		// @remark, never be nullptr, an AMF0 null instance.
 		RtmpAmf0Any* command_object; // null
 		// Name of the stream to play.
 		// To play video (FLV) files, specify the name of the stream without a file
@@ -530,12 +530,12 @@ namespace RTMP
 		// Transaction ID set to 0.
 		double transaction_id;
 		// Command information does not exist. Set to null type.
-		// @remark, never be NULL, an AMF0 null instance.
+		// @remark, never be nullptr, an AMF0 null instance.
 		RtmpAmf0Any* command_object; // null
 		// If the play command is successful, the client receives OnStatus message from
 		// server which is NetStream.Play.Start. If the specified stream is not found,
 		// NetStream.Play.StreamNotFound is received.
-		// @remark, never be NULL, an AMF0 object instance.
+		// @remark, never be nullptr, an AMF0 object instance.
 		RtmpAmf0Object* desc;
 
 	public:
@@ -564,7 +564,7 @@ namespace RTMP
 		// Transaction ID set to 0.
 		double transaction_id;
 		// Command information does not exist. Set to null type.
-		// @remark, never be NULL, an AMF0 null instance.
+		// @remark, never be nullptr, an AMF0 null instance.
 		RtmpAmf0Any* args; // null
 	public:
 		RtmpOnBWDonePacket();
@@ -592,11 +592,11 @@ namespace RTMP
 		// Transaction ID set to 0.
 		double transaction_id;
 		// Command information does not exist. Set to null type.
-		// @remark, never be NULL, an AMF0 null instance.
+		// @remark, never be nullptr, an AMF0 null instance.
 		RtmpAmf0Any* args; // null
 		// Name-value pairs that describe the response from the server.
 		// 'code','level', 'description' are names of few among such information.
-		// @remark, never be NULL, an AMF0 object instance.
+		// @remark, never be nullptr, an AMF0 object instance.
 		RtmpAmf0Object* data;
 
 	public:
@@ -625,7 +625,7 @@ namespace RTMP
 		std::string command_name;
 		// Name-value pairs that describe the response from the server.
 		// 'code', are names of few among such information.
-		// @remark, never be NULL, an AMF0 object instance.
+		// @remark, never be nullptr, an AMF0 object instance.
 		RtmpAmf0Object* data;
 
 	public:
@@ -683,7 +683,7 @@ namespace RTMP
 		// Name of metadata. Set to "onMetaData"
 		std::string name;
 		// Metadata of stream.
-		// @remark, never be NULL, an AMF0 object instance.
+		// @remark, never be nullptr, an AMF0 object instance.
 		RtmpAmf0Object* metadata;
 
 	public:

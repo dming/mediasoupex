@@ -43,11 +43,11 @@ namespace RTMP
 	 // use stream instead.
 
 	 2. directly read AMF0 any instance from stream:
-	 RtmpAmf0Any* pany = NULL;
+	 RtmpAmf0Any* pany = nullptr;
 	 srs_amf0_read_any(&stream, &pany);
 
 	 3. use RtmpAmf0Any to discovery instance from stream:
-	 RtmpAmf0Any* pany = NULL;
+	 RtmpAmf0Any* pany = nullptr;
 	 RtmpAmf0Any::discovery(&stream, &pany);
 
 	 4. directly read specified AMF0 instance value from stream:
@@ -245,8 +245,8 @@ namespace RTMP
 		virtual RtmpAmf0Any* copy() = 0;
 		/**
 		 * human readable print
-		 * @param pdata, output the heap data, NULL to ignore.
-		 * @return return the *pdata for print. NULL to ignore.
+		 * @param pdata, output the heap data, nullptr to ignore.
+		 * @return return the *pdata for print. nullptr to ignore.
 		 * @remark user must free the data returned or output by pdata.
 		 */
 		virtual char* human_print(char** pdata, int* psize);
@@ -259,7 +259,7 @@ namespace RTMP
 		/**
 		 * create an AMF0 string instance, set string content by value.
 		 */
-		static RtmpAmf0Any* str(const char* value = NULL);
+		static RtmpAmf0Any* str(const char* value = nullptr);
 		/**
 		 * create an AMF0 boolean instance, set boolean content by value.
 		 */
@@ -301,7 +301,7 @@ namespace RTMP
 		/**
 		 * discovery AMF0 instance from stream
 		 * @param ppvalue, output the discoveried AMF0 instance.
-		 *       NULL if error.
+		 *       nullptr if error.
 		 * @remark, instance is created without read from stream, user must
 		 *       use (*ppvalue)->read(stream) to get the instance.
 		 */
@@ -377,19 +377,19 @@ namespace RTMP
 		/**
 		 * get the property(key:value) of object,
 		 * @param name, the property name/key
-		 * @return the property AMF0 value, NULL if not found.
+		 * @return the property AMF0 value, nullptr if not found.
 		 * @remark user should never free the returned value, copy it if needed.
 		 */
 		virtual RtmpAmf0Any* get_property(std::string name);
 		/**
 		 * get the string property, ensure the property is_string().
-		 * @return the property AMF0 value, NULL if not found, or not a string.
+		 * @return the property AMF0 value, nullptr if not found, or not a string.
 		 * @remark user should never free the returned value, copy it if needed.
 		 */
 		virtual RtmpAmf0Any* ensure_property_string(std::string name);
 		/**
 		 * get the number property, ensure the property is_number().
-		 * @return the property AMF0 value, NULL if not found, or not a number.
+		 * @return the property AMF0 value, nullptr if not found, or not a number.
 		 * @remark user should never free the returned value, copy it if needed.
 		 */
 		virtual RtmpAmf0Any* ensure_property_number(std::string name);
@@ -470,19 +470,19 @@ namespace RTMP
 		/**
 		 * get the property(key:value) of array,
 		 * @param name, the property name/key
-		 * @return the property AMF0 value, NULL if not found.
+		 * @return the property AMF0 value, nullptr if not found.
 		 * @remark user should never free the returned value, copy it if needed.
 		 */
 		virtual RtmpAmf0Any* get_property(std::string name);
 		/**
 		 * get the string property, ensure the property is_string().
-		 * @return the property AMF0 value, NULL if not found, or not a string.
+		 * @return the property AMF0 value, nullptr if not found, or not a string.
 		 * @remark user should never free the returned value, copy it if needed.
 		 */
 		virtual RtmpAmf0Any* ensure_property_string(std::string name);
 		/**
 		 * get the number property, ensure the property is_number().
-		 * @return the property AMF0 value, NULL if not found, or not a number.
+		 * @return the property AMF0 value, nullptr if not found, or not a number.
 		 * @remark user should never free the returned value, copy it if needed.
 		 */
 		virtual RtmpAmf0Any* ensure_property_number(std::string name);
@@ -567,7 +567,7 @@ namespace RTMP
 	/**
 	 * read anything from stream.
 	 * @param ppvalue, the output amf0 any elem.
-	 *         NULL if error; otherwise, never NULL and user must free it.
+	 *         nullptr if error; otherwise, never nullptr and user must free it.
 	 */
 	extern srs_error_t srs_amf0_read_any(Utils::RtmpBuffer* stream, RtmpAmf0Any** ppvalue);
 
@@ -818,7 +818,7 @@ namespace RTMP
 			virtual RtmpAmf0Any* value_at(int index);
 			/**
 			 * set the value of hashtable.
-			 * @param value, the value to set. NULL to delete the property.
+			 * @param value, the value to set. nullptr to delete the property.
 			 */
 			virtual void set(std::string key, RtmpAmf0Any* value);
 

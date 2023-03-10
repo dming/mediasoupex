@@ -90,6 +90,14 @@ void Worker::Close()
 	}
 	this->mapWebRtcServers.clear();
 
+	// Delete all RtmpServers.
+	for (auto& kv : this->mapRtmpServers)
+	{
+		auto* rtmpServer = kv.second;
+		delete rtmpServer;
+	}
+	this->mapRtmpServers.clear();
+
 	// Delete the RTC::Shared singleton.
 	delete this->shared;
 

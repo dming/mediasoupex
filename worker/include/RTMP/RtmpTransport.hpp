@@ -1,71 +1,38 @@
-
-
-/**
- * Rtmp Transport , like SRS SrsLiveSource. Managed by RtmpTransportManager.
- * provide producer and consumers.
- */
-
 #ifndef MS_RTMP_TRANSPORT_HPP
 #define MS_RTMP_TRANSPORT_HPP
 
-#include "RTMP/RtmpKernel.hpp"
-#include "RTMP/RtmpProtocol.hpp"
-#include "RTMP/RtmpTcpConnection.hpp"
+#include "CplxError.hpp"
+#include "RTMP/RtmpMessage.hpp"
+#include "RTMP/RtmpSession.hpp"
 #include "RTC/TransportTuple.hpp"
 
 namespace RTMP
 {
-	class RtmpServer;
-	/**
-	 * RtmpTransport
-	 * 对应的是RtcTransport，作用包括：
-	 * 1. connection, 处理链接
-	 * 2. 处理和保持链路状态，包括所有的invoke命令
-	 * 3. 如果是publisher，则向RtmpServer创建RtmpRouter. 一个router等于一个直播间 --后面补充
-	 * 4. 持有RtmpPublisher或者RtmpPlayer对象，两者互斥，拥有的对象表明Transport的身份。--后面补充
-	 */
-	class RtmpTransport : public RTMP::RtmpTcpConnection::Listener
+	class RtmpRouter;
+	class RtmpTransport
 	{
-	public:
-		RtmpTransport(RtmpServer* rtmpServer);
-		~RtmpTransport();
-
-		/* Pure virtual methods inherited from RTMP::RtmpTcpConnection::Listener. */
-	public:
-		void OnTcpConnectionPacketReceived(
-		  RTMP::RtmpTcpConnection* connection, RtmpCommonMessage* msg) override;
-
-	public:
-		RtmpTcpConnection* GetConnection()
-		{
-			return connection_;
-		}
-		bool IsPublisher()
-		{
-			return info_->IsPublisher();
-		}
-		std::string GetStreamUrl()
-		{
-			return info_->req->get_stream_url();
-		}
-
 	private:
-		srs_error_t OnRecvMessage(RTC::TransportTuple* tuple, RtmpCommonMessage* msg);
-		// handle Packet Functions
-		srs_error_t HandleRtmpConnectAppPacket(RtmpConnectAppPacket* packet);
-		srs_error_t HandleRtmpFMLEStartPacket(RtmpFMLEStartPacket* packet);
-		srs_error_t HandleRtmpCreateStreamPacket(RtmpCreateStreamPacket* packet);
-		srs_error_t HandleRtmpPublishPacket(RtmpPublishPacket* packet);
-		// @param server_ip the ip of server.
-		srs_error_t response_connect_app(RtmpRequest* req, const char* server_ip);
+		/* data */
+	public:
+		RtmpTransport(RtmpRouter* router, RtmpSession* session);
+		virtual ~RtmpTransport();
 
-	private:
-		RtmpTcpConnection* connection_;
-		RtmpProtocol* protocol_;
-		// TODO: 增加SrsClientInfo保存客户端信息
-		// About the rtmp client.
-		RtmpClientInfo* info_;
-		RtmpServer* rtmpServer_;
+	public:
+		RtmpSession* GetSession()
+		{
+			return session_;
+		}
+		srs_error_t RecvMessage(RTC::TransportTuple* tuple, RtmpCommonMessage* msg);
+		srs_error_t send_and_free_message(RtmpSharedPtrMessage* msg, int stream_id);
+
+	protected:
+		virtual srs_error_t OnRecvMessage(RTC::TransportTuple* tuple, RtmpCommonMessage* msg) = 0;
+
+	protected:
+		RtmpSession* session_;
+		RtmpRouter* router_;
 	};
+
 } // namespace RTMP
+
 #endif

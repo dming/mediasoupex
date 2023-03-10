@@ -1516,42 +1516,42 @@ namespace RTMP
 	std::string RtmpJsonAny::to_str()
 	{
 		RtmpJsonString* p = dynamic_cast<RtmpJsonString*>(this);
-		srs_assert(p != NULL);
+		srs_assert(p != nullptr);
 		return p->value;
 	}
 
 	bool RtmpJsonAny::to_boolean()
 	{
 		RtmpJsonBoolean* p = dynamic_cast<RtmpJsonBoolean*>(this);
-		srs_assert(p != NULL);
+		srs_assert(p != nullptr);
 		return p->value;
 	}
 
 	int64_t RtmpJsonAny::to_integer()
 	{
 		RtmpJsonInteger* p = dynamic_cast<RtmpJsonInteger*>(this);
-		srs_assert(p != NULL);
+		srs_assert(p != nullptr);
 		return p->value;
 	}
 
 	double RtmpJsonAny::to_number()
 	{
 		RtmpJsonNumber* p = dynamic_cast<RtmpJsonNumber*>(this);
-		srs_assert(p != NULL);
+		srs_assert(p != nullptr);
 		return p->value;
 	}
 
 	RtmpJsonObject* RtmpJsonAny::to_object()
 	{
 		RtmpJsonObject* p = dynamic_cast<RtmpJsonObject*>(this);
-		srs_assert(p != NULL);
+		srs_assert(p != nullptr);
 		return p;
 	}
 
 	RtmpJsonArray* RtmpJsonAny::to_array()
 	{
 		RtmpJsonArray* p = dynamic_cast<RtmpJsonArray*>(this);
-		srs_assert(p != NULL);
+		srs_assert(p != nullptr);
 		return p;
 	}
 
@@ -1609,7 +1609,7 @@ namespace RTMP
 			case SRS_JSON_String:
 			{
 				RtmpJsonString* p = dynamic_cast<RtmpJsonString*>(this);
-				srs_assert(p != NULL);
+				srs_assert(p != nullptr);
 				return json_serialize_string(p->value);
 			}
 			case SRS_JSON_Boolean:
@@ -1733,7 +1733,7 @@ namespace RTMP
 	{
 		if (!node)
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		switch (node->type)
@@ -1754,12 +1754,12 @@ namespace RTMP
 				for (int i = 0; i < (int)node->u.object.length; i++)
 				{
 					json_object_entry& entry = node->u.object.values[i];
-					RtmpJsonAny* value        = srs_json_parse_tree(entry.value);
+					RtmpJsonAny* value       = srs_json_parse_tree(entry.value);
 
 					if (!value)
 					{
 						FREEP(obj);
-						return NULL;
+						return nullptr;
 					}
 
 					obj->set(std::string(entry.name, entry.name_length), value);
@@ -1771,13 +1771,13 @@ namespace RTMP
 				RtmpJsonArray* arr = RtmpJsonAny::array();
 				for (int i = 0; i < (int)node->u.array.length; i++)
 				{
-					json_value* p     = node->u.array.values[i];
+					json_value* p      = node->u.array.values[i];
 					RtmpJsonAny* value = srs_json_parse_tree(p);
 
 					if (!value)
 					{
 						FREEP(arr);
-						return NULL;
+						return nullptr;
 					}
 
 					arr->add(value);
@@ -1785,7 +1785,7 @@ namespace RTMP
 				return arr;
 			}
 			default:
-				return NULL;
+				return nullptr;
 		}
 	}
 
@@ -1793,10 +1793,10 @@ namespace RTMP
 	{
 		if (str.empty())
 		{
-			return NULL;
+			return nullptr;
 		}
 
-		json_value* j  = json_parse(str.data(), str.length());
+		json_value* j   = json_parse(str.data(), str.length());
 		RtmpJsonAny* sj = srs_json_parse_tree(j);
 		json_value_free(j);
 
@@ -1848,7 +1848,7 @@ namespace RTMP
 		for (int i = 0; i < (int)properties.size(); i++)
 		{
 			std::string name = this->key_at(i);
-			RtmpJsonAny* any  = this->value_at(i);
+			RtmpJsonAny* any = this->value_at(i);
 
 			ss << SRS_JFIELD_NAME(name) << any->dumps();
 			if (i < (int)properties.size() - 1)
@@ -1869,7 +1869,7 @@ namespace RTMP
 		for (int i = 0; i < (int)properties.size(); i++)
 		{
 			std::string name = this->key_at(i);
-			RtmpJsonAny* any  = this->value_at(i);
+			RtmpJsonAny* any = this->value_at(i);
 
 			obj->set(name, any->to_amf0());
 		}
@@ -1881,7 +1881,7 @@ namespace RTMP
 	{
 		if (!value)
 		{
-			MS_WARN_DEV("add a NULL propertity %s", key.c_str());
+			MS_WARN_DEV("add a nullptr propertity %s", key.c_str());
 			return this;
 		}
 
@@ -1890,7 +1890,7 @@ namespace RTMP
 		for (it = properties.begin(); it != properties.end(); ++it)
 		{
 			RtmpJsonObjectPropertyType& elem = *it;
-			std::string name                = elem.first;
+			std::string name                 = elem.first;
 			RtmpJsonAny* any                 = elem.second;
 
 			if (key == name)
@@ -1912,7 +1912,7 @@ namespace RTMP
 		for (it = properties.begin(); it != properties.end(); ++it)
 		{
 			RtmpJsonObjectPropertyType& elem = *it;
-			std::string key                 = elem.first;
+			std::string key                  = elem.first;
 			RtmpJsonAny* any                 = elem.second;
 			if (key == name)
 			{
@@ -1920,7 +1920,7 @@ namespace RTMP
 			}
 		}
 
-		return NULL;
+		return nullptr;
 	}
 
 	RtmpJsonAny* RtmpJsonObject::ensure_property_string(std::string name)
@@ -1929,12 +1929,12 @@ namespace RTMP
 
 		if (!prop)
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		if (!prop->is_string())
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		return prop;
@@ -1946,12 +1946,12 @@ namespace RTMP
 
 		if (!prop)
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		if (!prop->is_integer())
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		return prop;
@@ -1963,12 +1963,12 @@ namespace RTMP
 
 		if (!prop)
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		if (!prop->is_number())
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		return prop;
@@ -1980,12 +1980,12 @@ namespace RTMP
 
 		if (!prop)
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		if (!prop->is_boolean())
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		return prop;
@@ -1997,12 +1997,12 @@ namespace RTMP
 
 		if (!prop)
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		if (!prop->is_object())
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		return prop;
@@ -2014,12 +2014,12 @@ namespace RTMP
 
 		if (!prop)
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		if (!prop->is_array())
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		return prop;

@@ -20,14 +20,14 @@ namespace RTMP
 		srs_error_t err = srs_success;
 
 		int size      = 0;
-		char* payload = NULL;
+		char* payload = nullptr;
 		if ((err = encode(size, payload)) != srs_success)
 		{
 			return srs_error_wrap(err, "encode packet");
 		}
 
 		// encode packet to payload and size.
-		if (size <= 0 || payload == NULL)
+		if (size <= 0 || payload == nullptr)
 		{
 			MS_WARN_DEV("packet is empty, ignore empty message.");
 			return err;
@@ -53,7 +53,7 @@ namespace RTMP
 		srs_error_t err = srs_success;
 
 		int size      = get_size();
-		char* payload = NULL;
+		char* payload = nullptr;
 
 		if (size > 0)
 		{
@@ -106,7 +106,7 @@ namespace RTMP
 		transaction_id = 1;
 		command_object = RtmpAmf0Any::object();
 		// optional
-		args = NULL;
+		args = nullptr;
 	}
 
 	RtmpConnectAppPacket::~RtmpConnectAppPacket()
@@ -150,7 +150,7 @@ namespace RTMP
 
 			// see: https://github.com/ossrs/srs/issues/186
 			// the args maybe any amf0, for instance, a string. we should drop if not object.
-			RtmpAmf0Any* any = NULL;
+			RtmpAmf0Any* any = nullptr;
 			if ((err = RtmpAmf0Any::discovery(stream, &any)) != srs_success)
 			{
 				return srs_error_wrap(err, "args");
@@ -266,14 +266,14 @@ namespace RTMP
 		// some client donot send id=1.0, so we only warn user if not match.
 		if (transaction_id != 1.0)
 		{
-			MS_ERROR("invalid transaction_id=%.2f", transaction_id);
+			MS_ERROR_STD("invalid transaction_id=%.2f", transaction_id);
 		}
 
-		// for RED5(1.0.6), the props is NULL, we must ignore it.
+		// for RED5(1.0.6), the props is nullptr, we must ignore it.
 		// @see https://github.com/ossrs/srs/issues/418
 		if (!stream->empty())
 		{
-			RtmpAmf0Any* p = NULL;
+			RtmpAmf0Any* p = nullptr;
 			if ((err = srs_amf0_read_any(stream, &p)) != srs_success)
 			{
 				return srs_error_wrap(err, "args");
@@ -347,8 +347,8 @@ namespace RTMP
 	{
 		command_name   = "";
 		transaction_id = 0;
-		command_object = NULL;
-		arguments      = NULL;
+		command_object = nullptr;
+		arguments      = nullptr;
 	}
 
 	RtmpCallPacket::~RtmpCallPacket()
@@ -461,8 +461,8 @@ namespace RTMP
 	{
 		command_name   = RTMP_AMF0_COMMAND_RESULT;
 		transaction_id = _transaction_id;
-		command_object = NULL;
-		response       = NULL;
+		command_object = nullptr;
+		response       = nullptr;
 	}
 
 	RtmpCallResPacket::~RtmpCallResPacket()
@@ -1159,7 +1159,7 @@ namespace RTMP
 			return err;
 		}
 
-		RtmpAmf0Any* reset_value = NULL;
+		RtmpAmf0Any* reset_value = nullptr;
 		if ((err = srs_amf0_read_any(stream, &reset_value)) != srs_success)
 		{
 			return srs_error_wrap(err, "reset");
@@ -1596,7 +1596,7 @@ namespace RTMP
 		}
 
 		// the metadata maybe object or ecma array
-		RtmpAmf0Any* any = NULL;
+		RtmpAmf0Any* any = nullptr;
 		if ((err = srs_amf0_read_any(stream, &any)) != srs_success)
 		{
 			return srs_error_wrap(err, "metadata");

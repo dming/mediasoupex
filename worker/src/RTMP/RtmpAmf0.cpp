@@ -96,70 +96,70 @@ namespace RTMP
 	std::string RtmpAmf0Any::to_str()
 	{
 		RtmpAmf0String* p = dynamic_cast<RtmpAmf0String*>(this);
-		srs_assert(p != NULL);
+		srs_assert(p != nullptr);
 		return p->value;
 	}
 
 	const char* RtmpAmf0Any::to_str_raw()
 	{
 		RtmpAmf0String* p = dynamic_cast<RtmpAmf0String*>(this);
-		srs_assert(p != NULL);
+		srs_assert(p != nullptr);
 		return p->value.data();
 	}
 
 	bool RtmpAmf0Any::to_boolean()
 	{
 		RtmpAmf0Boolean* p = dynamic_cast<RtmpAmf0Boolean*>(this);
-		srs_assert(p != NULL);
+		srs_assert(p != nullptr);
 		return p->value;
 	}
 
 	double RtmpAmf0Any::to_number()
 	{
 		RtmpAmf0Number* p = dynamic_cast<RtmpAmf0Number*>(this);
-		srs_assert(p != NULL);
+		srs_assert(p != nullptr);
 		return p->value;
 	}
 
 	int64_t RtmpAmf0Any::to_date()
 	{
 		RtmpAmf0Date* p = dynamic_cast<RtmpAmf0Date*>(this);
-		srs_assert(p != NULL);
+		srs_assert(p != nullptr);
 		return p->date();
 	}
 
 	int16_t RtmpAmf0Any::to_date_time_zone()
 	{
 		RtmpAmf0Date* p = dynamic_cast<RtmpAmf0Date*>(this);
-		srs_assert(p != NULL);
+		srs_assert(p != nullptr);
 		return p->time_zone();
 	}
 
 	RtmpAmf0Object* RtmpAmf0Any::to_object()
 	{
 		RtmpAmf0Object* p = dynamic_cast<RtmpAmf0Object*>(this);
-		srs_assert(p != NULL);
+		srs_assert(p != nullptr);
 		return p;
 	}
 
 	RtmpAmf0EcmaArray* RtmpAmf0Any::to_ecma_array()
 	{
 		RtmpAmf0EcmaArray* p = dynamic_cast<RtmpAmf0EcmaArray*>(this);
-		srs_assert(p != NULL);
+		srs_assert(p != nullptr);
 		return p;
 	}
 
 	RtmpAmf0StrictArray* RtmpAmf0Any::to_strict_array()
 	{
 		RtmpAmf0StrictArray* p = dynamic_cast<RtmpAmf0StrictArray*>(this);
-		srs_assert(p != NULL);
+		srs_assert(p != nullptr);
 		return p;
 	}
 
 	void RtmpAmf0Any::set_number(double value)
 	{
 		RtmpAmf0Number* p = dynamic_cast<RtmpAmf0Number*>(this);
-		srs_assert(p != NULL);
+		srs_assert(p != nullptr);
 		p->value = value;
 	}
 
@@ -280,7 +280,7 @@ namespace RTMP
 		std::string str = ss.str();
 		if (str.empty())
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		char* data = new char[str.length() + 1];
@@ -572,7 +572,7 @@ namespace RTMP
 			}
 		}
 
-		return NULL;
+		return nullptr;
 	}
 
 	RtmpAmf0Any* RtmpUnSortedHashtable::ensure_property_string(std::string name)
@@ -581,12 +581,12 @@ namespace RTMP
 
 		if (!prop)
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		if (!prop->is_string())
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		return prop;
@@ -598,12 +598,12 @@ namespace RTMP
 
 		if (!prop)
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		if (!prop->is_number())
 		{
-			return NULL;
+			return nullptr;
 		}
 
 		return prop;
@@ -782,7 +782,7 @@ namespace RTMP
 				return srs_error_wrap(err, "read property name");
 			}
 			// property-value: any
-			RtmpAmf0Any* property_value = NULL;
+			RtmpAmf0Any* property_value = nullptr;
 			if ((err = srs_amf0_read_any(stream, &property_value)) != srs_success)
 			{
 				FREEP(property_value);
@@ -984,7 +984,7 @@ namespace RTMP
 				return srs_error_wrap(err, "read property name");
 			}
 			// property-value: any
-			RtmpAmf0Any* property_value = NULL;
+			RtmpAmf0Any* property_value = nullptr;
 			if ((err = srs_amf0_read_any(stream, &property_value)) != srs_success)
 			{
 				return srs_error_wrap(err, "read property value, name=%s", property_name.c_str());
@@ -1164,7 +1164,7 @@ namespace RTMP
 		for (int i = 0; i < count && !stream->empty(); i++)
 		{
 			// property-value: any
-			RtmpAmf0Any* elem = NULL;
+			RtmpAmf0Any* elem = nullptr;
 			if ((err = srs_amf0_read_any(stream, &elem)) != srs_success)
 			{
 				return srs_error_wrap(err, "read property");
@@ -1928,13 +1928,13 @@ namespace RTMP
 
 		srs_error_t srs_amf0_write_object_eof(Utils::RtmpBuffer* stream, RtmpAmf0ObjectEOF* value)
 		{
-			srs_assert(value != NULL);
+			srs_assert(value != nullptr);
 			return value->write(stream);
 		}
 
 		srs_error_t srs_amf0_write_any(Utils::RtmpBuffer* stream, RtmpAmf0Any* value)
 		{
-			srs_assert(value != NULL);
+			srs_assert(value != nullptr);
 			return value->write(stream);
 		}
 	} // namespace srs_internal

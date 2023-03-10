@@ -2,6 +2,7 @@
 #define MS_RTMP_UTILITY_HPP
 
 #include "RTMP/RtmpKernel.hpp"
+#include "UtilsBuffer.hpp"
 #include <map>
 #include <string>
 #include <vector>
@@ -47,6 +48,10 @@ namespace RTMP
 	// Format to a string.
 	std::string srs_fmt(const char* fmt, ...);
 
+	// Compare the memory in bytes.
+	// @return true if completely equal; otherwise, false.
+	bool srs_bytes_equals(void* pa, void* pb, int size);
+
 	// Whether path exists.
 	bool srs_path_exists(std::string path);
 	// Get the dirname of path, for instance, dirname("/live/livestream")="/live"
@@ -81,6 +86,14 @@ namespace RTMP
 	// @return the size of header. 0 if cache not enough.
 	int srs_chunk_header_c3(int perfer_cid, uint32_t timestamp, char* cache, int nb_cache);
 
+	// To read H.264 NALU uev.
+	srs_error_t srs_avc_nalu_read_uev(Utils::RtmpBitBuffer* stream, int32_t& v);
+	srs_error_t srs_avc_nalu_read_bit(Utils::RtmpBitBuffer* stream, int8_t& v);
+
+	// Whether stream starts with the avc NALU in "AnnexB" from ISO_IEC_14496-10-AVC-2003.pdf, page
+	// 211. The start code must be "N[00] 00 00 01" where N>=0
+	// @param pnb_start_code output the size of start code, must >=3. nullptr to ignore.
+	bool srs_avc_startswith_annexb(Utils::RtmpBuffer* stream, int* pnb_start_code = nullptr);
 } // namespace RTMP
 
 #endif

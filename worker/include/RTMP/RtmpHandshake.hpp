@@ -37,7 +37,7 @@ namespace RTMP
 		virtual int readS0s1s2(RtmpTcpConnection* io);
 		virtual int readC2(RtmpTcpConnection* io);
 		virtual int createC0c1();
-		virtual int createS0s1s2(const char* c1 = NULL);
+		virtual int createS0s1s2(const char* c1 = nullptr);
 		virtual int createC2();
 	};
 	class RtmpHandshake

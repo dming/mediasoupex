@@ -3,7 +3,7 @@
 
 #include "RTMP/RtmpTcpServer.hpp"
 #include "Logger.hpp"
-#include "RTMP/RtmpTransport.hpp"
+#include "RTMP/RtmpSession.hpp"
 #include "RTC/PortManager.hpp"
 
 namespace RTMP
@@ -20,7 +20,7 @@ namespace RTMP
 	    fixedPort(true)
 	{
 		MS_TRACE();
-		MS_DEBUG_DEV("RtmpTcpServer constructor with ip:%s port:%" PRIu16 ".", ip.c_str(), port);
+		MS_DEBUG_DEV_STD("RtmpTcpServer constructor with ip:%s port:%" PRIu16 ".", ip.c_str(), port);
 	}
 
 	RtmpTcpServer::~RtmpTcpServer()
@@ -35,25 +35,25 @@ namespace RTMP
 	void RtmpTcpServer::UserOnTcpConnectionAlloc()
 	{
 		MS_TRACE();
-		MS_DEBUG_DEV("UserOnTcpConnectionAlloc ");
+		MS_DEBUG_DEV_STD("UserOnTcpConnectionAlloc ");
 
 		// Allocate a new RTMP::RtmpTcpConnection for the RtmpTcpServer to handle it.
-		RTMP::RtmpTransport* transport = this->listener->CreateNewTransport();
+		RTMP::RtmpSession* session = this->listener->CreateNewSession();
 
-		RTMP::RtmpTcpConnection* connection = transport->GetConnection();
+		RTMP::RtmpTcpConnection* connection = session->GetConnection();
 		// Accept it.
 		AcceptTcpConnection(connection);
 
-		// [dming] TODO: transport
-		// 应该注册到RtmpServer里，即this->listener应该保有所有的transport，并在connection
+		// [dming] TODO: session
+		// 应该注册到RtmpServer里，即this->listener应该保有所有的session，并在connection
 		// close的时候，调用其析构函数
 		if (this->connections.find(connection) != this->connections.end())
 		{
-			this->listener->OnRtmpTransportCreated(this, transport);
+			this->listener->OnRtmpSessionCreated(this, session);
 		}
 		else
 		{
-			FREEP(transport);
+			FREEP(session);
 		}
 	}
 
@@ -61,10 +61,10 @@ namespace RTMP
 	{
 		MS_TRACE();
 
-		this->listener->OnRtcTcpConnectionClosed(this, static_cast<RTMP::RtmpTcpConnection*>(connection));
-		MS_DEBUG_DEV(
+		MS_DEBUG_DEV_STD(
 		  "UserOnTcpConnectionClosed ip=%s, port=%" PRIu16,
 		  connection->GetPeerIp().c_str(),
 		  connection->GetPeerPort());
+		this->listener->OnRtcTcpConnectionClosed(this, static_cast<RTMP::RtmpTcpConnection*>(connection));
 	}
 } // namespace RTMP

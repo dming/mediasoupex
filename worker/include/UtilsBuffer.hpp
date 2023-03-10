@@ -1,5 +1,6 @@
 #ifndef MS_UTILS_BUFFER_HPP
 #define MS_UTILS_BUFFER_HPP
+#include "CplxError.hpp"
 #include <stdint.h>
 #include <string>
 namespace Utils
@@ -95,6 +96,35 @@ namespace Utils
 		void write_string(std::string value);
 		// Write bytes to buffer
 		void write_bytes(char* data, int size);
+	};
+
+	/**
+	 * the bit buffer, base on RtmpBuffer,
+	 * for exmaple, the h.264 avc buffer is bit buffer.
+	 */
+	class RtmpBitBuffer
+	{
+	private:
+		int8_t cb;
+		uint8_t cb_left;
+		RtmpBuffer* stream;
+
+	public:
+		RtmpBitBuffer(RtmpBuffer* b);
+		~RtmpBitBuffer();
+
+	public:
+		bool empty();
+		int8_t read_bit();
+		bool require_bits(int n);
+		int left_bits();
+		void skip_bits(int n);
+		int32_t read_bits(int n);
+		int8_t read_8bits();
+		int16_t read_16bits();
+		int32_t read_32bits();
+		srs_error_t read_bits_ue(uint32_t& v);
+		srs_error_t read_bits_se(int32_t& v);
 	};
 } // namespace Utils
 #endif

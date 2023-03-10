@@ -199,7 +199,7 @@ namespace RTMP
 		// Create common message,
 		// from the header and body.
 		// @remark user should never free the body.
-		// @param pheader, the header to copy to the message. NULL to ignore.
+		// @param pheader, the header to copy to the message. nullptr to ignore.
 		virtual srs_error_t create(RtmpMessageHeader* pheader, char* body, int size);
 	};
 
@@ -311,14 +311,14 @@ namespace RTMP
 	public:
 		// Create shared ptr message,
 		// copy header, manage the payload of msg,
-		// set the payload to NULL to prevent double free.
-		// @remark payload of msg set to NULL if success.
+		// set the payload to nullptr to prevent double free.
+		// @remark payload of msg set to nullptr if success.
 		// @remark User should free the msg.
 		virtual srs_error_t create(RtmpCommonMessage* msg);
 		// Create shared ptr message,
 		// from the header and payload.
 		// @remark user should never free the payload.
-		// @param pheader, the header to copy to the message. NULL to ignore.
+		// @param pheader, the header to copy to the message. nullptr to ignore.
 		virtual srs_error_t create(RtmpMessageHeader* pheader, char* payload, int size);
 		// Create shared ptr message from RAW payload.
 		// @remark Note that the header is set to zero.

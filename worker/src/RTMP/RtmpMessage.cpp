@@ -114,7 +114,7 @@ namespace RTMP
 	// RtmpCommonMessage
 	RtmpCommonMessage::RtmpCommonMessage(/* args */)
 	{
-		payload = NULL;
+		payload = nullptr;
 		size    = 0;
 	}
 
@@ -170,7 +170,7 @@ namespace RTMP
 
 	RtmpSharedPtrMessage::RtmpSharedPtrPayload::RtmpSharedPtrPayload()
 	{
-		payload      = NULL;
+		payload      = nullptr;
 		size         = 0;
 		shared_count = 0;
 	}
@@ -180,9 +180,10 @@ namespace RTMP
 		FREEPA(payload);
 	}
 
-	RtmpSharedPtrMessage::RtmpSharedPtrMessage() : timestamp(0), stream_id(0), size(0), payload(NULL)
+	RtmpSharedPtrMessage::RtmpSharedPtrMessage()
+	  : timestamp(0), stream_id(0), size(0), payload(nullptr)
 	{
-		ptr = NULL;
+		ptr = nullptr;
 
 		// ++_srs_pps_objs_msgs->sugar;
 	}
@@ -214,7 +215,7 @@ namespace RTMP
 		// to prevent double free of payload:
 		// initialize already attach the payload of msg,
 		// detach the payload to transfer the owner to shared ptr.
-		msg->payload = NULL;
+		msg->payload = nullptr;
 		msg->size    = 0;
 
 		return err;
@@ -280,7 +281,7 @@ namespace RTMP
 		// ensure the basic header is 1bytes.
 		if (ptr->header.perfer_cid < 2 || ptr->header.perfer_cid > 63)
 		{
-			MS_DEBUG_DEV(
+			MS_DEBUG_DEV_STD(
 			  "change the chunk_id=%d to default=%d", ptr->header.perfer_cid, RTMP_CID_ProtocolControl);
 			ptr->header.perfer_cid = RTMP_CID_ProtocolControl;
 		}

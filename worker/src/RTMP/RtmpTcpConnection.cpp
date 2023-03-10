@@ -77,7 +77,7 @@ namespace RTMP
 
 		warned_c0c3_cache_dry = false;
 
-		chunkStreamCache = NULL;
+		chunkStreamCache = nullptr;
 		if (SRS_PERF_CHUNK_STREAM_CACHE > 0)
 		{
 			chunkStreamCache = new RtmpChunkStream*[SRS_PERF_CHUNK_STREAM_CACHE];
@@ -98,7 +98,8 @@ namespace RTMP
 	RtmpTcpConnection::~RtmpTcpConnection()
 	{
 		MS_TRACE();
-		MS_DEBUG_DEV("~RtmpTcpConnection Free ip:%s, port:%" PRIu16, GetPeerIp().c_str(), GetPeerPort());
+		MS_DEBUG_DEV_STD(
+		  "~RtmpTcpConnection Free ip:%s, port:%" PRIu16, GetPeerIp().c_str(), GetPeerPort());
 		FREEP(hsBytes);
 
 		// free all chunk stream cache.
@@ -123,7 +124,7 @@ namespace RTMP
 
 		if (b_showDebugLog)
 		{
-			MS_DEBUG_DEV(
+			MS_DEBUG_DEV_STD(
 			  "data received [local:%s :%" PRIu16 ", remote:%s :%" PRIu16 "] unRead:%" PRIu64
 			  ", times:%" PRIu32 ".",
 			  GetLocalIp().c_str(),
@@ -160,12 +161,12 @@ namespace RTMP
 				// size_t packetLen;
 
 				RtmpCommonMessage* msg = nullptr;
-				if (RecvInterlacedMessage(&msg) != 0)
+				if (RecvInterlacedMessage(&msg) != srs_success)
 				{
-					FREEPA(msg);
+					FREEP(msg);
 					if (b_showDebugLog)
 					{
-						MS_DEBUG_DEV("recv interlaced message");
+						MS_DEBUG_DEV_STD("recv interlaced message");
 					}
 					return;
 				}
@@ -179,18 +180,19 @@ namespace RTMP
 				{
 					if (b_showDebugLog)
 					{
-						MS_DEBUG_DEV(
+						MS_DEBUG_DEV_STD(
 						  "ignore empty message(type=%d, size=%d, time=%" PRId64 ", sid=%d).",
 						  msg->header.message_type,
 						  msg->header.payload_length,
 						  msg->header.timestamp,
 						  msg->header.stream_id);
 					}
-					FREEPA(msg);
+					FREEP(msg);
 					continue;
 				}
 
 				// 获得的msg直接抛给上层
+				RtmpAutoFree(RtmpCommonMessage, msg);
 				this->listener->OnTcpConnectionPacketReceived(this, msg);
 			}
 		}
@@ -209,7 +211,7 @@ namespace RTMP
 		{
 			if (b_showDebugLog)
 			{
-				MS_ERROR("not enought data for size %" PRIu64 ", only have %" PRIu64, dataSize, dataLen);
+				MS_ERROR_STD("not enought data for size %" PRIu64 ", only have %" PRIu64, dataSize, dataLen);
 			}
 			return -1;
 		}
@@ -223,7 +225,7 @@ namespace RTMP
 		{
 			if (b_showDebugLog)
 			{
-				MS_DEBUG_DEV("no more space in the buffer, emptying the buffer data");
+				MS_DEBUG_DEV_STD("no more space in the buffer, emptying the buffer data");
 			}
 
 			this->frameStart    = 0;
@@ -246,17 +248,17 @@ namespace RTMP
 		::TcpConnectionHandler::Write(data, len, cb);
 	}
 
-	int RtmpTcpConnection::RecvInterlacedMessage(RtmpCommonMessage** pmsg)
+	srs_error_t RtmpTcpConnection::RecvInterlacedMessage(RtmpCommonMessage** pmsg)
 	{
 		MS_TRACE();
-		int err = 0;
+		srs_error_t err = srs_success;
 		// chunk stream basic header.
 		char fmt  = 0;
 		int cid   = 0;
 		int bhLen = 0;
 		if ((err = ReadBasicHeader(fmt, cid, bhLen)) != 0)
 		{
-			MS_DEBUG_DEV("read basic header wrong");
+			MS_DEBUG_DEV_STD("read basic header wrong");
 			return err;
 		}
 
@@ -264,11 +266,11 @@ namespace RTMP
 		MS_ASSERT(cid >= 0, "the cid must not negative.");
 		if (b_showDebugLog)
 		{
-			MS_DEBUG_DEV("cid is %d", cid);
+			MS_DEBUG_DEV_STD("cid is %d", cid);
 		}
 
 		// get the cached chunk stream.
-		RtmpChunkStream* chunk = NULL;
+		RtmpChunkStream* chunk = nullptr;
 
 		// use chunk stream cache to get the chunk info.
 		// @see https://github.com/ossrs/srs/issues/249
@@ -293,22 +295,22 @@ namespace RTMP
 			}
 		}
 
-		if ((err = ReadMessageHeader(chunk, fmt, bhLen)) != 0)
+		if ((err = ReadMessageHeader(chunk, fmt, bhLen)) != srs_success)
 		{
 			if (b_showDebugLog)
 			{
-				MS_ERROR("read message header fail");
+				MS_ERROR_STD("read message header fail");
 			}
 			return err;
 		}
 
 		// read msg payload from chunk stream.
 		RtmpCommonMessage* msg = nullptr;
-		if ((err = ReadMessagePayload(chunk, &msg)) != 0) // [dming] third: read full body
+		if ((err = ReadMessagePayload(chunk, &msg)) != srs_success) // [dming] third: read full body
 		{
 			if (b_showDebugLog)
 			{
-				MS_ERROR("read message payload");
+				MS_ERROR_STD("read message payload");
 			}
 			return err;
 		}
@@ -367,7 +369,7 @@ namespace RTMP
 	 * Chunk stream IDs with values 64-319 could be represented by both 2-
 	 * byte version and 3-byte version of this field.
 	 */
-	int RtmpTcpConnection::ReadBasicHeader(char& fmt, int& cid, int& bhLen)
+	srs_error_t RtmpTcpConnection::ReadBasicHeader(char& fmt, int& cid, int& bhLen)
 	{
 		// 只要读完Header，就可以知道这个message所需的所有字节数，就知道能否读出完整的chunk
 
@@ -383,9 +385,9 @@ namespace RTMP
 		{
 			if (b_showDebugLog)
 			{
-				MS_DEBUG_DEV("basic header requires at least 1 bytes");
+				MS_DEBUG_DEV_STD("basic header requires at least 1 bytes");
 			}
-			return -1;
+			return srs_error_new(ERROR_RTMP_SOUP_ERROR, "basic header requires 1 bytes");
 		}
 
 		const char* p = (char*)(this->buffer + this->frameStart);
@@ -405,9 +407,9 @@ namespace RTMP
 			{
 				if (b_showDebugLog)
 				{
-					MS_DEBUG_DEV("basic header requires 2 bytes");
+					MS_DEBUG_DEV_STD("basic header requires 2 bytes");
 				}
-				return -1;
+				return srs_error_new(ERROR_RTMP_SOUP_ERROR, "basic header requires 2 bytes");
 			}
 			cid = 64;
 			cid += (uint8_t)*p++;
@@ -421,9 +423,9 @@ namespace RTMP
 			{
 				if (b_showDebugLog)
 				{
-					MS_DEBUG_DEV("basic header requires 3 bytes");
+					MS_DEBUG_DEV_STD("basic header requires 3 bytes");
 				}
-				return -1;
+				return srs_error_new(ERROR_RTMP_SOUP_ERROR, "basic header requires 3 bytes");
 			}
 			cid = 64;
 			cid += (uint8_t)*p++;
@@ -431,10 +433,10 @@ namespace RTMP
 			bhLen = 3;
 		}
 
-		return 0;
+		return srs_success;
 	}
 
-	int RtmpTcpConnection::ReadMessageHeader(RtmpChunkStream* chunk, char fmt, int bhLen)
+	srs_error_t RtmpTcpConnection::ReadMessageHeader(RtmpChunkStream* chunk, char fmt, int bhLen)
 	{
 		static char MH_SIZE[] = { 11, 7, 3, 0 };
 		/**
@@ -456,7 +458,7 @@ namespace RTMP
 
 		/**
 		 * we should not assert anything about fmt, for the first packet.
-		 * (when first packet, the chunk->msg is NULL).
+		 * (when first packet, the chunk->msg is nullptr).
 		 * the fmt maybe 0/1/2/3, the FMLE will send a 0xC4 for some audio packet.
 		 * the previous packet is:
 		 *     04                // fmt=0, cid=4
@@ -499,8 +501,10 @@ namespace RTMP
 				// must be a RTMP protocol level error.
 				// return srs_error_new(
 				//   ERROR_RTMP_CHUNK_START, "fresh chunk expect fmt=0, actual=%d, cid=%d", fmt, chunk->cid);
-				MS_ERROR("fresh chunk expect fmt=0, actual=%d, cid=%d", fmt, chunk->cid);
-				return -1;
+				MS_ERROR_STD("fresh chunk expect fmt=0, actual=%d, cid=%d", fmt, chunk->cid);
+				// must be a RTMP protocol level error.
+				return srs_error_new(
+				  ERROR_RTMP_CHUNK_START, "fresh chunk expect fmt=0, actual=%d, cid=%d", fmt, chunk->cid);
 			}
 		}
 
@@ -509,8 +513,8 @@ namespace RTMP
 		if (chunk->msg && fmt == RTMP_FMT_TYPE0)
 		{
 			// return srs_error_new(ERROR_RTMP_CHUNK_START, "for existed chunk, fmt should not be 0");
-			MS_ERROR("for existed chunk, fmt should not be 0");
-			return -1;
+			MS_ERROR_STD("for existed chunk, fmt should not be 0");
+			return srs_error_new(ERROR_RTMP_CHUNK_START, "for existed chunk, fmt should not be 0");
 		}
 
 		// create msg when new chunk stream start
@@ -525,9 +529,10 @@ namespace RTMP
 		{
 			if (b_showDebugLog)
 			{
-				MS_ERROR("cannot read %" PRId32 " bytes message header", bhLen + mhSize);
+				MS_ERROR_STD("cannot read %" PRId32 " bytes message header", bhLen + mhSize);
 			}
-			return -1;
+			return srs_error_new(
+			  ERROR_RTMP_SOUP_ERROR, "cannot read %" PRId32 " bytes message header", bhLen + mhSize);
 		}
 
 		MessageHeader header;
@@ -559,7 +564,7 @@ namespace RTMP
 				{
 					if (b_showDebugLog)
 					{
-						MS_ERROR("cannot read %" PRId32 " bytes message header", bhLen + mhSize);
+						MS_ERROR_STD("cannot read %" PRId32 " bytes message header", bhLen + mhSize);
 					}
 					goto NOT_ENOUGH_DATA;
 				}
@@ -575,7 +580,7 @@ namespace RTMP
 			{
 				if (b_showDebugLog)
 				{
-					MS_ERROR(
+					MS_ERROR_STD(
 					  "fmt=%d, cannot read %d bytes message header, and %d bytes payload size, only has %" PRIu64,
 					  fmt,
 					  bhLen + mhSize,
@@ -636,11 +641,15 @@ namespace RTMP
 				// length(it's not allowed in the continue chunks).
 				if (!is_first_chunk_of_msg && chunk->header.payload_length != payload_length)
 				{
-					MS_ERROR(
+					MS_ERROR_STD(
 					  "msg in chunk cache, size=%d cannot change to %d",
 					  chunk->header.payload_length,
 					  payload_length);
-					return -1;
+					return srs_error_new(
+					  ERROR_RTMP_PACKET_SIZE,
+					  "msg in chunk cache, size=%d cannot change to %d",
+					  chunk->header.payload_length,
+					  payload_length);
 				}
 
 				chunk->header.payload_length = payload_length;
@@ -661,7 +670,7 @@ namespace RTMP
 			{
 				if (b_showDebugLog)
 				{
-					MS_ERROR(
+					MS_ERROR_STD(
 					  "fmt=%d, cannot read %d bytes message header, and %d bytes payload size, only %" PRIu64,
 					  fmt,
 					  bhLen + mhSize,
@@ -756,16 +765,16 @@ namespace RTMP
 
 		this->frameStart += bhLen + mhSize;
 
-		return 0;
+		return srs_success;
 
 	NOT_ENOUGH_DATA:
 		if (chunk->msg && chunk->msg->size == 0)
 		{
 			if (b_showDebugLog)
 			{
-				MS_DEBUG_DEV("delete chunk->msg");
+				MS_DEBUG_DEV_STD("delete chunk->msg");
 			}
-			delete chunk->msg;
+			FREEP(chunk->msg);
 			chunk->msg = nullptr;
 		}
 
@@ -778,7 +787,7 @@ namespace RTMP
 			{
 				if (b_showDebugLog)
 				{
-					MS_DEBUG_DEV(
+					MS_DEBUG_DEV_STD(
 					  "no more space in the buffer, moving parsed bytes to the beginning of "
 					  "the buffer and wait for more data");
 				}
@@ -799,7 +808,9 @@ namespace RTMP
 				ErrorReceiving();
 
 				// And exit fast since we are supposed to be deallocated.
-				return -1;
+				return srs_error_new(
+				  ERROR_RTMP_SOUP_ERROR,
+				  "no more space in the buffer for the unfinished frame being parsed, closing the connection");
 			}
 		}
 		// The buffer is not full.
@@ -807,23 +818,23 @@ namespace RTMP
 		{
 			if (b_showDebugLog)
 			{
-				MS_DEBUG_DEV("frame not finished yet, waiting for more data");
+				MS_DEBUG_DEV_STD("frame not finished yet, waiting for more data");
 			}
 		}
-		return -1;
+		return srs_error_new(ERROR_RTMP_SOUP_ERROR, "not enough data for message");
 	}
 
-	int RtmpTcpConnection::ReadMessagePayload(RtmpChunkStream* chunk, RtmpCommonMessage** pmsg)
+	srs_error_t RtmpTcpConnection::ReadMessagePayload(RtmpChunkStream* chunk, RtmpCommonMessage** pmsg)
 	{
 		MS_TRACE();
 
-		int err = 0;
+		srs_error_t err = srs_success;
 		// empty message
 		if (chunk->header.payload_length <= 0)
 		{
 			if (b_showDebugLog)
 			{
-				MS_DEBUG_DEV(
+				MS_DEBUG_DEV_STD(
 				  "get an empty RTMP message(type=%d, size=%d, time=%" PRId64 ", sid=%d)",
 				  chunk->header.message_type,
 				  chunk->header.payload_length,
@@ -849,14 +860,14 @@ namespace RTMP
 			chunk->msg->create_payload(chunk->header.payload_length);
 			if (b_showDebugLog)
 			{
-				MS_DEBUG_DEV("create payload for RTMP message. size=%d", chunk->header.payload_length);
+				MS_DEBUG_DEV_STD("create payload for RTMP message. size=%d", chunk->header.payload_length);
 			}
 		}
 		memcpy(chunk->msg->payload + chunk->msg->size, this->buffer + this->frameStart, payload_size);
 		chunk->msg->size += payload_size;
 		if (b_showDebugLog)
 		{
-			MS_DEBUG_DEV(
+			MS_DEBUG_DEV_STD(
 			  "chunk msg size is :%d, and payload length is %d",
 			  chunk->msg->size,
 			  chunk->header.payload_length);
@@ -864,7 +875,7 @@ namespace RTMP
 
 		if (this->frameStart + payload_size == this->bufferSize)
 		{
-			MS_DEBUG_DEV("no more space in the buffer, emptying the buffer data");
+			MS_DEBUG_DEV_STD("no more space in the buffer, emptying the buffer data");
 			this->frameStart    = 0;
 			this->bufferDataLen = 0;
 		}
@@ -877,7 +888,7 @@ namespace RTMP
 		if (chunk->header.payload_length == chunk->msg->size)
 		{
 			*pmsg      = chunk->msg;
-			chunk->msg = NULL;
+			chunk->msg = nullptr;
 			return err;
 		}
 
@@ -946,7 +957,7 @@ namespace RTMP
 	srs_error_t RtmpTcpConnection::send_and_free_messages(
 	  RtmpSharedPtrMessage** msgs, int nb_msgs, int stream_id)
 	{
-		// always not NULL msg.
+		// always not nullptr msg.
 		srs_assert(msgs);
 		srs_assert(nb_msgs > 0);
 
@@ -1024,7 +1035,7 @@ namespace RTMP
 			}
 
 			// p set to current write position,
-			// it's ok when payload is NULL and size is 0.
+			// it's ok when payload is nullptr and size is 0.
 			char* p    = msg->payload;
 			char* pend = msg->payload + msg->size;
 
@@ -1045,7 +1056,7 @@ namespace RTMP
 				iovs[1].base     = p;
 				iovs[1].len      = payload_size;
 
-				MS_DEBUG_DEV("add header size=%d, payload size=%d", nbh, payload_size);
+				// MS_DEBUG_DEV_STD("add header size=%d, payload size=%d", nbh, payload_size);
 
 				// consume sendout bytes.
 				p += payload_size;
@@ -1136,7 +1147,7 @@ namespace RTMP
 			}
 
 			// p set to current write position,
-			// it's ok when payload is NULL and size is 0.
+			// it's ok when payload is nullptr and size is 0.
 			char* p    = msg->payload;
 			char* pend = msg->payload + msg->size;
 
@@ -1164,7 +1175,7 @@ namespace RTMP
 				// consume sendout bytes.
 				p += payload_size;
 
-				if ((er = skt->writev(iovs, 2, NULL)) != srs_success)
+				if ((er = skt->writev(iovs, 2, nullptr)) != srs_success)
 				{
 					return srs_error_wrap(err, "writev");
 				}
@@ -1178,7 +1189,7 @@ namespace RTMP
 	srs_error_t RtmpTcpConnection::do_iovs_send(uv_buf_t* iovs, int size)
 	{
 		srs_error_t err = srs_success;
-		MS_DEBUG_DEV("do_iovs_send send size=%d", size);
+		// MS_DEBUG_DEV_STD("do_iovs_send send size=%d", size);
 		size_t len = 0;
 		for (int i = 0; i < size; ++i)
 		{
@@ -1196,7 +1207,7 @@ namespace RTMP
 		}
 
 		Send((const uint8_t*)data, len, nullptr);
-		MS_DEBUG_DEV("do_iovs_send send len=%" PRIu64 "", len);
+		MS_DEBUG_DEV_STD("do_iovs_send send len=%" PRIu64 "", len);
 		return err;
 
 		// 		// the limits of writev iovs.

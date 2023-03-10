@@ -2,8 +2,8 @@
 #ifndef MS_RTMP_SERVER_HPP
 #define MS_RTMP_SERVER_HPP
 
+#include "RTMP/RtmpSession.hpp"
 #include "RTMP/RtmpTcpServer.hpp"
-#include "RTMP/RtmpTransport.hpp"
 #include "RtmpRouter.hpp"
 #include "RTC/Shared.hpp"
 #include <map>
@@ -13,7 +13,7 @@
 namespace RTMP
 {
 	/**
-	 * Rtmp Server 用于listen Rtmp tcp connection，并创建对应的RtmpTransport
+	 * Rtmp Server 用于listen Rtmp tcp connection，并创建对应的RtmpSession
 	 * 由worker在nodejs请求后创建出RtmpServer. config由nodejs提供。
 	 *
 	 */
@@ -30,10 +30,10 @@ namespace RTMP
 
 		/* Pure virtual methods inherited from RTMP::RtmpTcpServer::Listener. */
 	public:
-		RtmpTransport* CreateNewTransport() override;
+		RtmpSession* CreateNewSession() override;
 		void OnRtcTcpConnectionClosed(
 		  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTcpConnection* connection) override;
-		void OnRtmpTransportCreated(RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTransport* transport) override;
+		void OnRtmpSessionCreated(RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpSession* session) override;
 
 	public:
 		RtmpRouter* FetchRouter(RtmpRequest* req);
@@ -48,7 +48,7 @@ namespace RTMP
 		// Passed by argument.
 		RTC::Shared* shared{ nullptr };
 		RTMP::RtmpTcpServer* tcpServer;
-		std::map<uint64_t, RTMP::RtmpTransport*> transports_;
+		std::map<uint64_t, RTMP::RtmpSession*> sessions_;
 		std::map<std::string, RTMP::RtmpRouter*> routers_;
 	};
 } // namespace RTMP

@@ -22,6 +22,22 @@ typedef int64_t srs_utime_t;
 #define SRS_CONSTS_RTMP_DEFAULT_VHOST "__defaultVhost__"
 #define SRS_CONSTS_RTMP_DEFAULT_APP "__defaultApp__"
 
+// The default chunk size for system.
+#define SRS_CONSTS_RTMP_SRS_CHUNK_SIZE 60000
+// 6. Chunking, RTMP protocol default chunk size.
+#define SRS_CONSTS_RTMP_PROTOCOL_CHUNK_SIZE 128
+
+// 6. Chunking
+// The chunk size is configurable. It can be set using a control
+// message(Set Chunk Size) as described in section 7.1. The maximum
+// chunk size can be 65536 bytes and minimum 128 bytes. Larger values
+// reduce CPU usage, but also commit to larger writes that can delay
+// other content on lower bandwidth connections. Smaller chunks are not
+// good for high-bit rate streaming. Chunk size is maintained
+// independently for each direction.
+#define SRS_CONSTS_RTMP_MIN_CHUNK_SIZE 128
+#define SRS_CONSTS_RTMP_MAX_CHUNK_SIZE 65536
+
 // To convert macro values to string.
 // @see https://gcc.gnu.org/onlinedocs/cpp/Stringification.html#Stringification
 #define SRS_INTERNAL_STR(v) #v
@@ -79,4 +95,8 @@ typedef int64_t srs_utime_t;
 #define RtmpAutoFree(className, instance)                                                          \
 	std::unique_ptr<className> _auto_free_##instance(instance);
 
+#define SRS_UTIME_MILLISECONDS 1000
+
+// H.264 nalu header type mask.
+const uint8_t kNalTypeMask = 0x1F;
 #endif

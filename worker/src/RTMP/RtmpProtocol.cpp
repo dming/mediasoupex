@@ -21,7 +21,7 @@ namespace RTMP
 		objectEncoding = RTMP_SIG_AMF0_VER;
 		duration       = -1;
 		port           = SRS_CONSTS_RTMP_DEFAULT_PORT;
-		args           = NULL;
+		args           = nullptr;
 
 		protocol = "rtmp";
 	}
@@ -86,7 +86,7 @@ namespace RTMP
 
 		protocol = req->protocol;
 
-		MS_DEBUG_DEV("update req of soruce for auth ok");
+		MS_DEBUG_DEV_STD("update req of soruce for auth ok");
 	}
 
 	std::string RtmpRequest::get_stream_url()
@@ -196,18 +196,18 @@ namespace RTMP
 
 	srs_error_t RtmpProtocol::decode_message(RtmpCommonMessage* msg, RtmpPacket** ppacket)
 	{
-		*ppacket = NULL;
+		*ppacket = nullptr;
 
 		srs_error_t err = srs_success;
 
-		srs_assert(msg != NULL);
-		srs_assert(msg->payload != NULL);
+		srs_assert(msg != nullptr);
+		srs_assert(msg->payload != nullptr);
 		srs_assert(msg->size > 0);
 
 		Utils::RtmpBuffer stream(msg->payload, msg->size);
 
 		// decode the packet.
-		RtmpPacket* packet = NULL;
+		RtmpPacket* packet = nullptr;
 		if ((err = do_decode_message(msg->header, &stream, &packet)) != srs_success)
 		{
 			FREEP(packet);
@@ -227,7 +227,7 @@ namespace RTMP
 	{
 		srs_error_t err = srs_success;
 
-		RtmpPacket* packet = NULL;
+		RtmpPacket* packet = nullptr;
 
 		// decode specified packet type
 		if (header.is_amf0_command() || header.is_amf3_command() || header.is_amf0_data() || header.is_amf3_data())
@@ -402,7 +402,7 @@ namespace RTMP
 		{
 			if (!header.is_set_peer_bandwidth() && !header.is_ackledgement())
 			{
-				MS_DEBUG_DEV("drop unknown message, type=%d", header.message_type);
+				MS_DEBUG_DEV_STD("drop unknown message, type=%d", header.message_type);
 			}
 		}
 
@@ -414,7 +414,7 @@ namespace RTMP
 		srs_error_t err = srs_success;
 
 		// ignore raw bytes oriented RTMP message.
-		if (packet == NULL)
+		if (packet == nullptr)
 		{
 			return err;
 		}
@@ -480,7 +480,7 @@ namespace RTMP
 		if (show_debug_info)
 		{
 			show_debug_info = false;
-			MS_DEBUG_DEV(
+			MS_DEBUG_DEV_STD(
 			  "protocol in.buffer=%d, in.ack=%d, out.ack=%d, in.chunk=%d, out.chunk=%d",
 			  in_buffer_length,
 			  in_ack_size.window,

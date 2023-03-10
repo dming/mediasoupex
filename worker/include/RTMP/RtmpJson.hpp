@@ -11,8 +11,8 @@ namespace RTMP
 	////////////////////////////////////////////////////////////////////////
 	// JSON decode
 	// 1. RtmpJsonAny: read any from str:char*
-	//        RtmpJsonAny* any = NULL;
-	//        if ((any = RtmpJsonAny::loads(str)) == NULL) {
+	//        RtmpJsonAny* any = nullptr;
+	//        if ((any = RtmpJsonAny::loads(str)) == nullptr) {
 	//            return -1;
 	//         }
 	//        srs_assert(pany); // if success, always valid object.
@@ -78,7 +78,7 @@ namespace RTMP
 		virtual RtmpAmf0Any* to_amf0();
 
 	public:
-		static RtmpJsonAny* str(const char* value = NULL);
+		static RtmpJsonAny* str(const char* value = nullptr);
 		static RtmpJsonAny* str(const char* value, int length);
 		static RtmpJsonAny* boolean(bool value = false);
 		static RtmpJsonAny* integer(int64_t value = 0);
@@ -89,7 +89,7 @@ namespace RTMP
 
 	public:
 		// Read json tree from string.
-		// @return json object. NULL if error.
+		// @return json object. nullptr if error.
 		static RtmpJsonAny* loads(std::string str);
 	};
 

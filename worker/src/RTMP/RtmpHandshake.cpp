@@ -36,7 +36,7 @@ namespace RTMP
 		c0c1 = new char[1537];
 		if (err = io->ReadFully(c0c1, 1537) != 0)
 		{
-			MS_ERROR("readC0c1 fail");
+			MS_ERROR_STD("readC0c1 fail");
 			FREEP(c0c1);
 			return err;
 		}
@@ -52,7 +52,7 @@ namespace RTMP
 		s0s1s2 = new char[3073];
 		if (err = io->ReadFully(s0s1s2, 3073) != 0)
 		{
-			MS_ERROR("readS0s1s2 fail");
+			MS_ERROR_STD("readS0s1s2 fail");
 			FREEP(s0s1s2);
 			return err;
 		}
@@ -69,7 +69,7 @@ namespace RTMP
 		c2 = new char[1536];
 		if (err = io->ReadFully(c2, 1536) != 0)
 		{
-			MS_ERROR("readC2 fail");
+			MS_ERROR_STD("readC2 fail");
 			FREEP(c2);
 			return err;
 		}
@@ -153,19 +153,19 @@ namespace RTMP
 		MS_TRACE();
 		if (hsBytes->readC0c1(connection) != 0)
 		{
-			MS_ERROR("read c0c1 fail");
+			MS_ERROR_STD("read c0c1 fail");
 			return -1;
 		}
 
 		if (hsBytes->c0c1[0] != 0x03)
 		{
-			MS_ERROR("only support rtmp plain text, version=%" PRIu8, (uint8_t)hsBytes->c0c1[0]);
+			MS_ERROR_STD("only support rtmp plain text, version=%" PRIu8, (uint8_t)hsBytes->c0c1[0]);
 			return -1;
 		}
 
 		if (!hsBytes->s0s1s2 && hsBytes->createS0s1s2() != 0)
 		{
-			MS_ERROR("create s0s1s2 fail");
+			MS_ERROR_STD("create s0s1s2 fail");
 			return -1;
 		}
 
@@ -178,12 +178,12 @@ namespace RTMP
 
 		if (hsBytes->readC2(connection) != 0)
 		{
-			MS_ERROR("read c2 fail");
+			MS_ERROR_STD("read c2 fail");
 			return -1;
 		}
 
 		hsBytes->done = true;
-		MS_DEBUG_DEV(
+		MS_DEBUG_DEV_STD(
 		  "RtmpHandshake::HandshakeWithClient Done. \n Peer:%s:%d",
 		  connection->GetPeerIp().c_str(),
 		  connection->GetPeerPort());
