@@ -1189,7 +1189,10 @@ namespace RTMP
 	srs_error_t RtmpTcpConnection::do_iovs_send(uv_buf_t* iovs, int size)
 	{
 		srs_error_t err = srs_success;
-		// MS_DEBUG_DEV_STD("do_iovs_send send size=%d", size);
+		if (b_showDebugLog)
+		{
+			MS_DEBUG_DEV_STD("do_iovs_send send size=%d", size);
+		}
 		size_t len = 0;
 		for (int i = 0; i < size; ++i)
 		{
@@ -1207,34 +1210,10 @@ namespace RTMP
 		}
 
 		Send((const uint8_t*)data, len, nullptr);
-		MS_DEBUG_DEV_STD("do_iovs_send send len=%" PRIu64 "", len);
+		if (b_showDebugLog)
+		{
+			MS_DEBUG_DEV_STD("do_iovs_send send len=%" PRIu64 "", len);
+		}
 		return err;
-
-		// 		// the limits of writev iovs.
-		// #ifndef _WIN32
-		// 		// for linux, generally it's 1024.
-		// 		static int limits = (int)sysconf(_SC_IOV_MAX);
-		// #else
-		// 		static int limits = 1024;
-		// #endif
-
-		// 		// send in a time.
-		// 		if (size <= limits)
-		// 		{
-		// 			Send((const uint8_t*)iovs, size, nullptr);
-		// 			return err;
-		// 		}
-
-		// 		// send in multiple times.
-		// 		int cur_iov    = 0;
-		// 		ssize_t nwrite = 0;
-		// 		while (cur_iov < size)
-		// 		{
-		// 			int cur_count = std::min(limits, size - cur_iov);
-		// 			Send((const uint8_t*)iovs + cur_iov, cur_count, nullptr);
-		// 			cur_iov += cur_count;
-		// 		}
-
-		// 		return err;
 	}
 } // namespace RTMP

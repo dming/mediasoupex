@@ -39,7 +39,7 @@ namespace RTMP
 	  RTMP::RtmpTcpConnection* connection, RtmpCommonMessage* msg)
 	{
 		MS_TRACE();
-		std::lock_guard<std::mutex> lock(messageMutex);
+		// std::lock_guard<std::mutex> lock(messageMutex);
 		RTC::TransportTuple tuple(connection);
 		if (transport_ != nullptr)
 		{

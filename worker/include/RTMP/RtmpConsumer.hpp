@@ -6,6 +6,7 @@
 namespace RTMP
 {
 	class RtmpRouter;
+	class RtmpRtmpJitter;
 	class RtmpConsumer : public RTMP::RtmpTransport
 	{
 	public:
@@ -14,6 +15,13 @@ namespace RTMP
 
 	protected:
 		srs_error_t OnRecvMessage(RTC::TransportTuple* tuple, RtmpCommonMessage* msg) override;
+
+	public:
+		// Get current client time, the last packet time.
+		virtual int64_t get_time();
+
+	private:
+		RtmpRtmpJitter* jitter_;
 	};
 } // namespace RTMP
 

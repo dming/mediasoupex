@@ -8,11 +8,11 @@ namespace RTMP
 	/**
 	 * Create special structure from RTMP stream, for example, the metadata.
 	 */
-	class SrsRtmpFormat : public SrsFormat
+	class RtmpRtmpFormat : public SrsFormat
 	{
 	public:
-		SrsRtmpFormat();
-		virtual ~SrsRtmpFormat();
+		RtmpRtmpFormat();
+		virtual ~RtmpRtmpFormat();
 
 	public:
 		// Initialize the format from metadata, optional.

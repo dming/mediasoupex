@@ -7,21 +7,21 @@
 namespace RTMP
 {
 
-	SrsRtmpFormat::SrsRtmpFormat()
+	RtmpRtmpFormat::RtmpRtmpFormat()
 	{
 	}
 
-	SrsRtmpFormat::~SrsRtmpFormat()
+	RtmpRtmpFormat::~RtmpRtmpFormat()
 	{
 	}
 
-	srs_error_t SrsRtmpFormat::on_metadata(RtmpOnMetaDataPacket* meta)
+	srs_error_t RtmpRtmpFormat::on_metadata(RtmpOnMetaDataPacket* meta)
 	{
 		// TODO: FIXME: Try to initialize format from metadata.
 		return srs_success;
 	}
 
-	srs_error_t SrsRtmpFormat::on_audio(RtmpSharedPtrMessage* shared_audio)
+	srs_error_t RtmpRtmpFormat::on_audio(RtmpSharedPtrMessage* shared_audio)
 	{
 		RtmpSharedPtrMessage* msg = shared_audio;
 		char* data                = msg->payload;
@@ -30,12 +30,12 @@ namespace RTMP
 		return SrsFormat::on_audio(msg->timestamp, data, size);
 	}
 
-	srs_error_t SrsRtmpFormat::on_audio(int64_t timestamp, char* data, int size)
+	srs_error_t RtmpRtmpFormat::on_audio(int64_t timestamp, char* data, int size)
 	{
 		return SrsFormat::on_audio(timestamp, data, size);
 	}
 
-	srs_error_t SrsRtmpFormat::on_video(RtmpSharedPtrMessage* shared_video)
+	srs_error_t RtmpRtmpFormat::on_video(RtmpSharedPtrMessage* shared_video)
 	{
 		RtmpSharedPtrMessage* msg = shared_video;
 		char* data                = msg->payload;
@@ -44,7 +44,7 @@ namespace RTMP
 		return SrsFormat::on_video(msg->timestamp, data, size);
 	}
 
-	srs_error_t SrsRtmpFormat::on_video(int64_t timestamp, char* data, int size)
+	srs_error_t RtmpRtmpFormat::on_video(int64_t timestamp, char* data, int size)
 	{
 		return SrsFormat::on_video(timestamp, data, size);
 	}

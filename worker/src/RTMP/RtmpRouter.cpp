@@ -29,43 +29,43 @@ namespace RTMP
 	{
 		if (time_jitter == "full")
 		{
-			return SrsRtmpJitterAlgorithmFULL;
+			return RtmpRtmpJitterAlgorithmFULL;
 		}
 		else if (time_jitter == "zero")
 		{
-			return SrsRtmpJitterAlgorithmZERO;
+			return RtmpRtmpJitterAlgorithmZERO;
 		}
 		else
 		{
-			return SrsRtmpJitterAlgorithmOFF;
+			return RtmpRtmpJitterAlgorithmOFF;
 		}
 	}
 
-	SrsRtmpJitter::SrsRtmpJitter()
+	RtmpRtmpJitter::RtmpRtmpJitter()
 	{
 		last_pkt_correct_time = -1;
 		last_pkt_time         = 0;
 	}
 
-	SrsRtmpJitter::~SrsRtmpJitter()
+	RtmpRtmpJitter::~RtmpRtmpJitter()
 	{
 	}
 
-	srs_error_t SrsRtmpJitter::correct(RtmpSharedPtrMessage* msg, SrsRtmpJitterAlgorithm ag)
+	srs_error_t RtmpRtmpJitter::correct(RtmpSharedPtrMessage* msg, RtmpRtmpJitterAlgorithm ag)
 	{
 		srs_error_t err = srs_success;
 
 		// for performance issue
-		if (ag != SrsRtmpJitterAlgorithmFULL)
+		if (ag != RtmpRtmpJitterAlgorithmFULL)
 		{
 			// all jitter correct features is disabled, ignore.
-			if (ag == SrsRtmpJitterAlgorithmOFF)
+			if (ag == RtmpRtmpJitterAlgorithmOFF)
 			{
 				return err;
 			}
 
 			// start at zero, but donot ensure monotonically increasing.
-			if (ag == SrsRtmpJitterAlgorithmZERO)
+			if (ag == RtmpRtmpJitterAlgorithmZERO)
 			{
 				// for the first time, last_pkt_correct_time is -1.
 				if (last_pkt_correct_time == -1)
@@ -117,7 +117,7 @@ namespace RTMP
 		return err;
 	}
 
-	int64_t SrsRtmpJitter::get_time()
+	int64_t RtmpRtmpJitter::get_time()
 	{
 		return last_pkt_correct_time;
 	}
@@ -205,62 +205,62 @@ namespace RTMP
 		return msg;
 	}
 
-	SrsMetaCache::SrsMetaCache()
+	RtmpMetaCache::RtmpMetaCache()
 	{
 		meta = video = audio = nullptr;
 		previous_video = previous_audio = nullptr;
-		vformat                         = new SrsRtmpFormat();
-		aformat                         = new SrsRtmpFormat();
+		vformat                         = new RtmpRtmpFormat();
+		aformat                         = new RtmpRtmpFormat();
 	}
 
-	SrsMetaCache::~SrsMetaCache()
+	RtmpMetaCache::~RtmpMetaCache()
 	{
 		dispose();
 		FREEP(vformat);
 		FREEP(aformat);
 	}
 
-	void SrsMetaCache::dispose()
+	void RtmpMetaCache::dispose()
 	{
 		clear();
 		FREEP(previous_video);
 		FREEP(previous_audio);
 	}
 
-	void SrsMetaCache::clear()
+	void RtmpMetaCache::clear()
 	{
 		FREEP(meta);
 		FREEP(video);
 		FREEP(audio);
 	}
 
-	RtmpSharedPtrMessage* SrsMetaCache::data()
+	RtmpSharedPtrMessage* RtmpMetaCache::data()
 	{
 		return meta;
 	}
 
-	RtmpSharedPtrMessage* SrsMetaCache::vsh()
+	RtmpSharedPtrMessage* RtmpMetaCache::vsh()
 	{
 		return video;
 	}
 
-	SrsFormat* SrsMetaCache::vsh_format()
+	SrsFormat* RtmpMetaCache::vsh_format()
 	{
 		return vformat;
 	}
 
-	RtmpSharedPtrMessage* SrsMetaCache::ash()
+	RtmpSharedPtrMessage* RtmpMetaCache::ash()
 	{
 		return audio;
 	}
 
-	SrsFormat* SrsMetaCache::ash_format()
+	SrsFormat* RtmpMetaCache::ash_format()
 	{
 		return aformat;
 	}
 
-	srs_error_t SrsMetaCache::dumps(
-	  RtmpConsumer* consumer, bool atc, int streamId, SrsRtmpJitterAlgorithm ag, bool dm, bool ds)
+	srs_error_t RtmpMetaCache::dumps(
+	  RtmpConsumer* consumer, bool atc, int streamId, RtmpRtmpJitterAlgorithm ag, bool dm, bool ds)
 	{
 		srs_error_t err = srs_success;
 
@@ -289,29 +289,29 @@ namespace RTMP
 		return err;
 	}
 
-	RtmpSharedPtrMessage* SrsMetaCache::previous_vsh()
+	RtmpSharedPtrMessage* RtmpMetaCache::previous_vsh()
 	{
 		return previous_video;
 	}
 
-	RtmpSharedPtrMessage* SrsMetaCache::previous_ash()
+	RtmpSharedPtrMessage* RtmpMetaCache::previous_ash()
 	{
 		return previous_audio;
 	}
 
-	void SrsMetaCache::update_previous_vsh()
+	void RtmpMetaCache::update_previous_vsh()
 	{
 		FREEP(previous_video);
 		previous_video = video ? video->copy() : nullptr;
 	}
 
-	void SrsMetaCache::update_previous_ash()
+	void RtmpMetaCache::update_previous_ash()
 	{
 		FREEP(previous_audio);
 		previous_audio = audio ? audio->copy() : nullptr;
 	}
 
-	srs_error_t SrsMetaCache::update_data(
+	srs_error_t RtmpMetaCache::update_data(
 	  RtmpMessageHeader* header, RtmpOnMetaDataPacket* metadata, bool& updated)
 	{
 		updated = false;
@@ -382,7 +382,7 @@ namespace RTMP
 		return err;
 	}
 
-	srs_error_t SrsMetaCache::update_ash(RtmpSharedPtrMessage* msg)
+	srs_error_t RtmpMetaCache::update_ash(RtmpSharedPtrMessage* msg)
 	{
 		FREEP(audio);
 		audio = msg->copy();
@@ -390,7 +390,7 @@ namespace RTMP
 		return aformat->on_audio(msg);
 	}
 
-	srs_error_t SrsMetaCache::update_vsh(RtmpSharedPtrMessage* msg)
+	srs_error_t RtmpMetaCache::update_vsh(RtmpSharedPtrMessage* msg)
 	{
 		FREEP(video);
 		video = msg->copy();
@@ -398,15 +398,189 @@ namespace RTMP
 		return vformat->on_video(msg);
 	}
 
-	RtmpRouter::RtmpRouter(/* args */)
+	RtmpGopCache::RtmpGopCache()
 	{
-		req_             = nullptr;
-		jitter_algorithm = SrsRtmpJitterAlgorithmOFF;
+		cached_video_count           = 0;
+		enable_gop_cache             = true;
+		audio_after_last_video_count = 0;
+		gop_cache_max_frames_        = 0;
+	}
 
-		mix_correct      = false;
-		mix_queue        = new RtmpMixQueue();
-		meta             = new SrsMetaCache();
-		format_          = new SrsRtmpFormat();
+	RtmpGopCache::~RtmpGopCache()
+	{
+		clear();
+	}
+
+	void RtmpGopCache::dispose()
+	{
+		clear();
+	}
+
+	void RtmpGopCache::set(bool v)
+	{
+		enable_gop_cache = v;
+
+		if (!v)
+		{
+			clear();
+			return;
+		}
+	}
+
+	void RtmpGopCache::set_gop_cache_max_frames(int v)
+	{
+		gop_cache_max_frames_ = v;
+	}
+
+	bool RtmpGopCache::enabled()
+	{
+		return enable_gop_cache;
+	}
+
+	srs_error_t RtmpGopCache::cache(RtmpSharedPtrMessage* shared_msg)
+	{
+		srs_error_t err = srs_success;
+
+		if (!enable_gop_cache)
+		{
+			return err;
+		}
+
+		// the gop cache know when to gop it.
+		RtmpSharedPtrMessage* msg = shared_msg;
+
+		// got video, update the video count if acceptable
+		if (msg->is_video())
+		{
+			// Drop video when not h.264 or h.265.
+			bool codec_ok = RtmpFlvVideo::h264(msg->payload, msg->size);
+#ifdef SRS_H265
+			codec_ok = codec_ok ? true : RtmpFlvVideo::hevc(msg->payload, msg->size);
+#endif
+			if (!codec_ok)
+				return err;
+
+			cached_video_count++;
+			audio_after_last_video_count = 0;
+		}
+
+		// no acceptable video or pure audio, disable the cache.
+		if (pure_audio())
+		{
+			return err;
+		}
+
+		// ok, gop cache enabled, and got an audio.
+		if (msg->is_audio())
+		{
+			audio_after_last_video_count++;
+		}
+
+		// clear gop cache when pure audio count overflow
+		if (audio_after_last_video_count > SRS_PURE_AUDIO_GUESS_COUNT)
+		{
+			MS_WARN_DEV_STD("clear gop cache for guess pure audio overflow");
+			clear();
+			return err;
+		}
+
+		// clear gop cache when got key frame
+		if (msg->is_video() && RtmpFlvVideo::keyframe(msg->payload, msg->size))
+		{
+			clear();
+
+			// curent msg is video frame, so we set to 1.
+			cached_video_count = 1;
+		}
+
+		// cache the frame.
+		gop_cache.push_back(msg->copy());
+
+		// Clear gop cache if exceed the max frames.
+		if (gop_cache_max_frames_ > 0 && gop_cache.size() > (size_t)gop_cache_max_frames_)
+		{
+			MS_WARN_DEV_STD(
+			  "Gop cache exceed max frames=%d, total=%d, videos=%d, aalvc=%d",
+			  gop_cache_max_frames_,
+			  (int)gop_cache.size(),
+			  cached_video_count,
+			  audio_after_last_video_count);
+			clear();
+		}
+
+		return err;
+	}
+
+	void RtmpGopCache::clear()
+	{
+		std::vector<RtmpSharedPtrMessage*>::iterator it;
+		for (it = gop_cache.begin(); it != gop_cache.end(); ++it)
+		{
+			RtmpSharedPtrMessage* msg = *it;
+			FREEP(msg);
+		}
+		gop_cache.clear();
+
+		cached_video_count           = 0;
+		audio_after_last_video_count = 0;
+	}
+
+	srs_error_t RtmpGopCache::dump(RtmpConsumer* consumer, bool atc, RtmpRtmpJitterAlgorithm jitter_algorithm)
+	{
+		srs_error_t err = srs_success;
+
+		std::vector<RtmpSharedPtrMessage*>::iterator it;
+		for (it = gop_cache.begin(); it != gop_cache.end(); ++it)
+		{
+			RtmpSharedPtrMessage* msg = *it;
+			// if ((err = consumer->enqueue(msg, atc, jitter_algorithm)) != srs_success)
+			if ((err = consumer->send_and_free_message(msg->copy(), consumer->GetSession()->GetStreamId())) != srs_success)
+			{
+				return srs_error_wrap(err, "enqueue message");
+			}
+		}
+		MS_DEBUG_DEV_STD(
+		  "dispatch cached gop success. count=%d, duration=%" PRId64,
+		  (int)gop_cache.size(),
+		  consumer->get_time());
+
+		return err;
+	}
+
+	bool RtmpGopCache::empty()
+	{
+		return gop_cache.empty();
+	}
+
+	srs_utime_t RtmpGopCache::start_time()
+	{
+		if (empty())
+		{
+			return 0;
+		}
+
+		RtmpSharedPtrMessage* msg = gop_cache[0];
+		srs_assert(msg);
+
+		return srs_utime_t(msg->timestamp * SRS_UTIME_MILLISECONDS);
+	}
+
+	bool RtmpGopCache::pure_audio()
+	{
+		return cached_video_count == 0;
+	}
+
+	RtmpRouter::RtmpRouter() : req_(nullptr), publisher_(nullptr)
+	{
+		jitter_algorithm = RtmpRtmpJitterAlgorithmOFF;
+
+		mix_correct = false;
+		mix_queue   = new RtmpMixQueue();
+
+		gop_cache = new RtmpGopCache();
+
+		meta             = new RtmpMetaCache();
+		format_          = new RtmpRtmpFormat();
 		last_packet_time = 0;
 
 		atc = false;
@@ -415,6 +589,7 @@ namespace RTMP
 	RtmpRouter::~RtmpRouter()
 	{
 		FREEP(req_);
+		FREEP(gop_cache);
 		FREEP(meta);
 		FREEP(format_);
 		FREEP(mix_queue);
@@ -431,10 +606,12 @@ namespace RTMP
 
 	srs_error_t RtmpRouter::CreatePublisher(RtmpSession* session, RtmpPublisher** publisher)
 	{
-		MS_DEBUG_DEV_STD("CreatePublisher start!!!");
+		MS_DEBUG_DEV_STD("CreatePublisher start 0 !!!");
 		srs_error_t err = srs_success;
+		MS_DEBUG_DEV_STD("CreatePublisher start 1 !!!");
 		if (publisher_)
 		{
+			MS_DEBUG_DEV_STD("CreatePublisher start 1 error !!!");
 			MS_ERROR_STD(
 			  "publisher_ already in router , %s", publisher_->GetSession()->GetStreamUrl().c_str());
 			return srs_error_new(ERROR_RTMP_SOUP_ERROR, "publisher_ already in router");
@@ -504,10 +681,16 @@ namespace RTMP
 			bool ds = true;
 			if (
 			  (err = meta->dumps(
-			     consumer, atc, consumer->GetSession()->GetStreamId, SrsRtmpJitterAlgorithmOFF, dm, ds)) !=
+			     consumer, atc, consumer->GetSession()->GetStreamId(), RtmpRtmpJitterAlgorithmOFF, dm, ds)) !=
 			  srs_success)
 			{
 				return srs_error_wrap(err, "meta dumps");
+			}
+
+			// copy gop cache to client.
+			if ((err = gop_cache->dump(consumer, atc, jitter_algorithm)) != srs_success)
+			{
+				return srs_error_wrap(err, "gop cache dumps");
 			}
 		}
 		return err;
@@ -600,7 +783,8 @@ namespace RTMP
 			if (meta->previous_ash()->size == msg->size)
 			{
 				drop_for_reduce = srs_bytes_equals(meta->previous_ash()->payload, msg->payload, msg->size);
-				MS_WARN_DEV("drop for reduce sh audio, size=%d", msg->size);
+				MS_WARN_DEV(
+				  "drop for reduce sh audio, size=%d, drop_for_reduce=%d", msg->size, drop_for_reduce);
 			}
 		}
 
@@ -648,11 +832,11 @@ namespace RTMP
 			return err;
 		}
 
-		// // cache the last gop packets
-		// if ((err = gop_cache->cache(msg)) != srs_success)
-		// {
-		// 	return srs_error_wrap(err, "gop cache consume audio");
-		// }
+		// cache the last gop packets
+		if ((err = gop_cache->cache(msg)) != srs_success)
+		{
+			return srs_error_wrap(err, "gop cache consume audio");
+		}
 
 		// if atc, update the sequence header to abs time.
 		if (atc)
@@ -821,11 +1005,11 @@ namespace RTMP
 			return err;
 		}
 
-		// // cache the last gop packets
-		// if ((err = gop_cache->cache(msg)) != srs_success)
-		// {
-		// 	return srs_error_wrap(err, "gop cache consume vdieo");
-		// }
+		// cache the last gop packets
+		if ((err = gop_cache->cache(msg)) != srs_success)
+		{
+			return srs_error_wrap(err, "gop cache consume vdieo");
+		}
 
 		// if atc, update the sequence header to abs time.
 		if (atc)
