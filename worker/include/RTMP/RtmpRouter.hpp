@@ -228,6 +228,7 @@ namespace RTMP
 
 		srs_error_t OnAudio(RtmpCommonMessage* shared_audio);
 		srs_error_t OnVideo(RtmpCommonMessage* shared_video);
+		srs_error_t OnAggregate(RtmpCommonMessage* shared_video);
 
 	private:
 		srs_error_t on_audio_imp(RtmpSharedPtrMessage* msg);

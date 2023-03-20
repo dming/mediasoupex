@@ -17,7 +17,7 @@ namespace RTMP
 {
 	RtmpSession::RtmpSession(RtmpServer* rtmpServer)
 	  : rtmpServer_(rtmpServer), connection_(new RTMP::RtmpTcpConnection(this, 65535)),
-	    protocol_(new RtmpProtocol()), info_(new RtmpClientInfo()), transport_(nullptr)
+	    info_(new RtmpClientInfo()), transport_(nullptr)
 	{
 		MS_TRACE();
 	}
@@ -29,7 +29,7 @@ namespace RTMP
 
 		// NOTE: connection will be free in TcpServerHandler::OnTcpConnectionClosed
 		FREEP(info_);
-		FREEP(protocol_);
+		FREEP(connection_);
 		connection_ = nullptr;
 		rtmpServer_ = nullptr;
 		transport_  = nullptr;
@@ -58,103 +58,18 @@ namespace RTMP
 		srs_error_t err = srs_success;
 
 		RTMP::RtmpPacket* packet;
-		if (msg->header.is_user_control_message())
-		{
-			if ((err = protocol_->decode_message(msg, &packet)) != srs_success)
-			{
-				return srs_error_wrap(err, "decode message");
-			}
-			if (RtmpUserControlPacket* m_packet = dynamic_cast<RtmpUserControlPacket*>(packet))
-			{
-				MS_DEBUG_DEV_STD("====>OnRecvMessage RtmpUserControlPacket ");
-				if (m_packet->event_type == SrcPCUCSetBufferLength)
-				{
-					protocol_->in_buffer_length = m_packet->extra_data;
-				}
-				if (m_packet->event_type == SrcPCUCPingRequest)
-				{
-					if ((err = response_ping_message(m_packet->event_data)) != srs_success)
-					{
-						return srs_error_wrap(err, "response ping");
-					}
-				}
-			}
-			else
-			{
-				MS_ERROR_STD("====>OnRecvMessage RtmpUserControlPacket ");
-			}
-		}
-		else if (msg->header.is_window_ackledgement_size())
-		{
-			if ((err = protocol_->decode_message(msg, &packet)) != srs_success)
-			{
-				return srs_error_wrap(err, "decode message");
-			}
-			if (RtmpSetWindowAckSizePacket* m_packet = dynamic_cast<RtmpSetWindowAckSizePacket*>(packet))
-			{
-				MS_DEBUG_DEV_STD("====>OnRecvMessage RtmpSetWindowAckSizePacket ");
-				if (m_packet->ackowledgement_window_size > 0)
-				{
-					protocol_->in_ack_size.window = (uint32_t)m_packet->ackowledgement_window_size;
-					// @remark, we ignore this message, for user noneed to care.
-					// but it's important for dev, for client/server will block if required
-					// ack msg not arrived.
-				}
-			}
-			else
-			{
-				MS_ERROR_STD("====>OnRecvMessage RtmpSetWindowAckSizePacket ");
-			}
-		}
-		else if (msg->header.is_set_chunk_size())
-		{
-			if ((err = protocol_->decode_message(msg, &packet)) != srs_success)
-			{
-				return srs_error_wrap(err, "decode message");
-			}
-			if (RtmpSetChunkSizePacket* m_packet = dynamic_cast<RtmpSetChunkSizePacket*>(packet))
-			{
-				MS_DEBUG_DEV_STD("====>OnRecvMessage RtmpSetChunkSizePacket ");
-				// for some server, the actual chunk size can greater than the max value(65536),
-				// so we just warning the invalid chunk size, and actually use it is ok,
-				// @see: https://github.com/ossrs/srs/issues/160
-				if (m_packet->chunk_size < SRS_CONSTS_RTMP_MIN_CHUNK_SIZE || m_packet->chunk_size > SRS_CONSTS_RTMP_MAX_CHUNK_SIZE)
-				{
-					MS_WARN_DEV(
-					  "accept chunk=%d, should in [%d, %d], please see #160",
-					  m_packet->chunk_size,
-					  SRS_CONSTS_RTMP_MIN_CHUNK_SIZE,
-					  SRS_CONSTS_RTMP_MAX_CHUNK_SIZE);
-				}
 
-				// @see: https://github.com/ossrs/srs/issues/541
-				if (m_packet->chunk_size < SRS_CONSTS_RTMP_MIN_CHUNK_SIZE)
-				{
-					return srs_error_new(
-					  ERROR_RTMP_CHUNK_SIZE,
-					  "chunk size should be %d+, value=%d",
-					  SRS_CONSTS_RTMP_MIN_CHUNK_SIZE,
-					  m_packet->chunk_size);
-				}
-
-				protocol_->in_chunk_size = m_packet->chunk_size;
-			}
-			else
-			{
-				MS_ERROR_STD("====>OnRecvMessage RtmpSetChunkSizePacket ");
-			}
-		}
-		else if (msg->header.is_ackledgement())
+		if (msg->header.is_ackledgement())
 		{
 			MS_DEBUG_DEV_STD("====>OnRecvMessage RtmpAcknowledgementPacket ");
-			if ((err = protocol_->decode_message(msg, &packet)) != srs_success)
+			if ((err = connection_->decode_message(msg, &packet)) != srs_success)
 			{
 				return srs_error_wrap(err, "decode message");
 			}
 		}
 		else if (msg->header.is_amf0_command() || msg->header.is_amf3_command())
 		{
-			if ((err = protocol_->decode_message(msg, &packet)) != srs_success)
+			if ((err = connection_->decode_message(msg, &packet)) != srs_success)
 			{
 				return srs_error_wrap(err, "decode message");
 			}
@@ -211,10 +126,13 @@ namespace RTMP
 		}
 		else if (msg->header.is_amf0_data() || msg->header.is_amf3_data())
 		{
-			if ((err = protocol_->decode_message(msg, &packet)) != srs_success)
-			{
-				return srs_error_wrap(err, "decode message");
-			}
+			// do nothing
+			MS_ERROR("OnRecvMessage should not get amf0/3 data");
+		}
+		else if (msg->header.is_video() || msg->header.is_audio())
+		{
+			// do nothing
+			MS_ERROR("OnRecvMessage should not get audio/video");
 		}
 
 		return err;
@@ -325,7 +243,7 @@ namespace RTMP
 		srs_error_t err = srs_success;
 
 		RtmpRequest* req = info_->req;
-		info_->type      = SrsRtmpConnFMLEPublish;
+		info_->type      = RtmpRtmpConnFMLEPublish;
 		req->stream      = packet->stream_name;
 		MS_DEBUG_DEV_STD(
 		  "HandleRtmpFMLEStartPacket command=%s, transaction_id=%f, stream=%s",
@@ -405,60 +323,17 @@ namespace RTMP
 			connection_->Close();
 			return srs_error_wrap(err, "rtmp: fetch router");
 		}
-		if (!router)
-		{
-			MS_ERROR("FUKKKKKKKKKKKK!!! router");
-			return srs_error_new(ERROR_RTMP_SOUP_ERROR, "fuck");
-		}
-		MS_DEBUG_DEV_STD(
-		  "HandleRtmpPublishPacket succeed FetchOrCreateRouter: %s",
-		  info_->req->get_stream_url().c_str());
 		if ((err = router->CreatePublisher(this, &publisher)) != srs_success)
 		{
 			MS_ERROR_STD("HandleRtmpPublishPacket cannot creare publisher, close the connection");
 			connection_->Close();
 			return srs_error_wrap(err, "rtmp: create publisher");
 		}
-		if (!publisher)
-		{
-			MS_ERROR("FUKKKKKKKKKKKK!!! publisher");
-			return srs_error_new(ERROR_RTMP_SOUP_ERROR, "fuck");
-		}
 
 		MS_DEBUG_DEV_STD(
 		  "HandleRtmpPublishPacket succeed CreatePublisher: %s", info_->req->get_stream_url().c_str());
-		MS_DEBUG_DEV_STD(
-		  "HandleRtmpPublishPacket succeed set publisher nooooo to transport_: %s",
-		  info_->req->get_stream_url().c_str());
 
 		transport_ = publisher;
-
-		return err;
-	}
-
-	srs_error_t RtmpSession::response_ping_message(int32_t timestamp)
-	{
-		srs_error_t err = srs_success;
-
-		MS_DEBUG_DEV_STD("get a ping request, response it. timestamp=%d", timestamp);
-
-		RtmpUserControlPacket* pkt = new RtmpUserControlPacket();
-
-		pkt->event_type = SrcPCUCPingResponse;
-		pkt->event_data = timestamp;
-
-		// // cache the message and use flush to send.
-		// if (!auto_response_when_recv)
-		// {
-		// 	manual_response_queue.push_back(pkt);
-		// 	return err;
-		// }
-
-		// use underlayer api to send, donot flush again.
-		if ((err = connection_->send_and_free_packet(pkt, 0)) != srs_success)
-		{
-			return srs_error_wrap(err, "ping response");
-		}
 
 		return err;
 	}
@@ -466,7 +341,7 @@ namespace RTMP
 	srs_error_t RtmpSession::HandleRtmpPlayPacket(RtmpPlayPacket* packet)
 	{
 		srs_error_t err      = srs_success;
-		info_->type          = SrsRtmpConnPlay;
+		info_->type          = RtmpRtmpConnPlay;
 		info_->req->stream   = packet->stream_name;
 		info_->req->duration = (srs_utime_t)packet->duration * SRS_UTIME_MILLISECONDS;
 
@@ -564,5 +439,122 @@ namespace RTMP
 		router->ConsumerDump(consumer);
 		transport_ = consumer;
 		return srs_success;
+	}
+
+	srs_error_t RtmpSession::on_play_client_pause(int stream_id, bool is_pause)
+	{
+		srs_error_t err = srs_success;
+
+		if (is_pause)
+		{
+			// onStatus(NetStream.Pause.Notify)
+			if (true)
+			{
+				RtmpOnStatusCallPacket* pkt = new RtmpOnStatusCallPacket();
+
+				pkt->data->set(StatusLevel, RtmpAmf0Any::str(StatusLevelStatus));
+				pkt->data->set(StatusCode, RtmpAmf0Any::str(StatusCodeStreamPause));
+				pkt->data->set(StatusDescription, RtmpAmf0Any::str("Paused stream."));
+
+				if ((err = connection_->send_and_free_packet(pkt, stream_id)) != srs_success)
+				{
+					return srs_error_wrap(err, "send NetStream.Pause.Notify");
+				}
+			}
+			// StreamEOF
+			if (true)
+			{
+				RtmpUserControlPacket* pkt = new RtmpUserControlPacket();
+
+				pkt->event_type = SrcPCUCStreamEOF;
+				pkt->event_data = stream_id;
+
+				if ((err = connection_->send_and_free_packet(pkt, 0)) != srs_success)
+				{
+					return srs_error_wrap(err, "send StreamEOF");
+				}
+			}
+		}
+		else
+		{
+			// onStatus(NetStream.Unpause.Notify)
+			if (true)
+			{
+				RtmpOnStatusCallPacket* pkt = new RtmpOnStatusCallPacket();
+
+				pkt->data->set(StatusLevel, RtmpAmf0Any::str(StatusLevelStatus));
+				pkt->data->set(StatusCode, RtmpAmf0Any::str(StatusCodeStreamUnpause));
+				pkt->data->set(StatusDescription, RtmpAmf0Any::str("Unpaused stream."));
+
+				if ((err = connection_->send_and_free_packet(pkt, stream_id)) != srs_success)
+				{
+					return srs_error_wrap(err, "send NetStream.Unpause.Notify");
+				}
+			}
+			// StreamBegin
+			if (true)
+			{
+				RtmpUserControlPacket* pkt = new RtmpUserControlPacket();
+
+				pkt->event_type = SrcPCUCStreamBegin;
+				pkt->event_data = stream_id;
+
+				if ((err = connection_->send_and_free_packet(pkt, 0)) != srs_success)
+				{
+					return srs_error_wrap(err, "send StreamBegin");
+				}
+			}
+		}
+
+		return err;
+	}
+
+	srs_error_t RtmpSession::fmle_unpublish(int stream_id, double unpublish_tid)
+	{
+		srs_error_t err = srs_success;
+		MS_DEBUG_DEV_STD("fmle_unpublish stream_id=%d, unpublish_tid=%f", stream_id, unpublish_tid);
+		// publish response onFCUnpublish(NetStream.unpublish.Success)
+		if (true)
+		{
+			RtmpOnStatusCallPacket* pkt = new RtmpOnStatusCallPacket();
+
+			pkt->command_name = RTMP_AMF0_COMMAND_ON_FC_UNPUBLISH;
+			pkt->data->set(StatusCode, RtmpAmf0Any::str(StatusCodeUnpublishSuccess));
+			pkt->data->set(StatusDescription, RtmpAmf0Any::str("Stop publishing stream."));
+
+			if ((err = connection_->send_and_free_packet(pkt, stream_id)) != srs_success)
+			{
+				return srs_error_wrap(err, "send NetStream.unpublish.Success");
+			}
+			MS_DEBUG_DEV_STD("send NetStream.unpublish.Success");
+		}
+		// FCUnpublish response
+		if (true)
+		{
+			RtmpFMLEStartResPacket* pkt = new RtmpFMLEStartResPacket(unpublish_tid);
+			if ((err = connection_->send_and_free_packet(pkt, stream_id)) != srs_success)
+			{
+				return srs_error_wrap(err, "send FCUnpublish response");
+			}
+			MS_DEBUG_DEV_STD("send FCUnpublish response");
+		}
+		// publish response onStatus(NetStream.Unpublish.Success)
+		if (true)
+		{
+			RtmpOnStatusCallPacket* pkt = new RtmpOnStatusCallPacket();
+
+			pkt->data->set(StatusLevel, RtmpAmf0Any::str(StatusLevelStatus));
+			pkt->data->set(StatusCode, RtmpAmf0Any::str(StatusCodeUnpublishSuccess));
+			pkt->data->set(StatusDescription, RtmpAmf0Any::str("Stream is now unpublished"));
+			pkt->data->set(StatusClientId, RtmpAmf0Any::str(RTMP_SIG_CLIENT_ID));
+
+			if ((err = connection_->send_and_free_packet(pkt, stream_id)) != srs_success)
+			{
+				return srs_error_wrap(err, "send NetStream.Unpublish.Success");
+			}
+			MS_DEBUG_DEV_STD("send NetStream.Unpublish.Success");
+		}
+
+		return err;
 	}
 } // namespace RTMP

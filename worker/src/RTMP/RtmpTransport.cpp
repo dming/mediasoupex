@@ -16,6 +16,7 @@ namespace RTMP
 
 	RtmpTransport::~RtmpTransport()
 	{
+		MS_DEBUG_DEV_STD("~RtmpTransport ..");
 		router_  = nullptr;
 		session_ = nullptr;
 	}

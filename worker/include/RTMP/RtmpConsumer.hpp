@@ -21,7 +21,12 @@ namespace RTMP
 		virtual int64_t get_time();
 
 	private:
+		// when client send the pause message.
+		virtual srs_error_t on_play_client_pause(bool is_pause);
+
+	private:
 		RtmpRtmpJitter* jitter_;
+		bool b_paused_;
 	};
 } // namespace RTMP
 

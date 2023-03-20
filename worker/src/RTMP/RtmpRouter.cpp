@@ -630,8 +630,10 @@ namespace RTMP
 		srs_error_t err = srs_success;
 		if (publisher_ && publisher_->GetSession() == session)
 		{
-			MS_DEBUG_DEV_STD("RemoveSession remove Publisher ");
+			MS_DEBUG_DEV_STD("RemoveSession remove Publisher 2");
 			FREEP(publisher_);
+			// gop_cache->clear();
+			// meta->clear();
 			return err;
 		}
 
@@ -1021,6 +1023,112 @@ namespace RTMP
 			if (meta->data())
 			{
 				meta->data()->timestamp = msg->timestamp;
+			}
+		}
+
+		return err;
+	}
+
+	srs_error_t RtmpRouter::OnAggregate(RtmpCommonMessage* msg)
+	{
+		srs_error_t err = srs_success;
+
+		Utils::RtmpBuffer* stream = new Utils::RtmpBuffer(msg->payload, msg->size);
+		RtmpAutoFree(Utils::RtmpBuffer, stream);
+
+		// the aggregate message always use abs time.
+		int delta = -1;
+
+		while (!stream->empty())
+		{
+			if (!stream->require(1))
+			{
+				return srs_error_new(ERROR_RTMP_AGGREGATE, "aggregate");
+			}
+			int8_t type = stream->read_1bytes();
+
+			if (!stream->require(3))
+			{
+				return srs_error_new(ERROR_RTMP_AGGREGATE, "aggregate");
+			}
+			int32_t data_size = stream->read_3bytes();
+
+			if (data_size < 0)
+			{
+				return srs_error_new(ERROR_RTMP_AGGREGATE, "aggregate size");
+			}
+
+			if (!stream->require(3))
+			{
+				return srs_error_new(ERROR_RTMP_AGGREGATE, "aggregate time");
+			}
+			int32_t timestamp = stream->read_3bytes();
+
+			if (!stream->require(1))
+			{
+				return srs_error_new(ERROR_RTMP_AGGREGATE, "aggregate time(high bits)");
+			}
+			int32_t time_h = stream->read_1bytes();
+
+			timestamp |= time_h << 24;
+			timestamp &= 0x7FFFFFFF;
+
+			// adjust abs timestamp in aggregate msg.
+			// only -1 means uninitialized delta.
+			if (delta == -1)
+			{
+				delta = (int)msg->header.timestamp - (int)timestamp;
+			}
+			timestamp += delta;
+
+			if (!stream->require(3))
+			{
+				return srs_error_new(ERROR_RTMP_AGGREGATE, "aggregate stream id");
+			}
+			int32_t stream_id = stream->read_3bytes();
+
+			if (data_size > 0 && !stream->require(data_size))
+			{
+				return srs_error_new(ERROR_RTMP_AGGREGATE, "aggregate data");
+			}
+
+			// to common message.
+			RtmpCommonMessage o;
+
+			o.header.message_type    = type;
+			o.header.payload_length  = data_size;
+			o.header.timestamp_delta = timestamp;
+			o.header.timestamp       = timestamp;
+			o.header.stream_id       = stream_id;
+			o.header.perfer_cid      = msg->header.perfer_cid;
+
+			if (data_size > 0)
+			{
+				o.size    = data_size;
+				o.payload = new char[o.size];
+				stream->read_bytes(o.payload, o.size);
+			}
+
+			if (!stream->require(4))
+			{
+				return srs_error_new(ERROR_RTMP_AGGREGATE, "aggregate previous tag size");
+			}
+			stream->read_4bytes();
+
+			// process parsed message
+			if (o.header.is_audio())
+			{
+				if ((err = OnAudio(&o)) != srs_success)
+				{
+					return srs_error_wrap(err, "consume audio");
+				}
+			}
+			else if (o.header.is_video())
+			{
+				if ((err = OnVideo(&o)) != srs_success)
+				{
+					return srs_error_wrap(err, "consume video");
+				}
 			}
 		}
 

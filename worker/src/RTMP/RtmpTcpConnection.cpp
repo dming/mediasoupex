@@ -7,7 +7,6 @@
 #include "RTMP/RtmpKernel.hpp"
 #include "Utils.hpp"
 #include <cstring> // std::memmove(), std::memcpy()
-#include <mutex>
 
 /**
  * whether always use complex send algorithm.
@@ -57,10 +56,14 @@
 // the same as the timestamp of Type 0 chunk.
 #define RTMP_FMT_TYPE3 3
 
-static std::mutex globalReadMutex;
-
 namespace RTMP
 {
+	RtmpTcpConnection::AckWindowSize::AckWindowSize()
+	{
+		window          = 0;
+		sequence_number = 0;
+		nb_recv_bytes   = 0;
+	}
 
 	RtmpTcpConnection::RtmpTcpConnection(Listener* listener, size_t bufferSize)
 	  : ::TcpConnectionHandler::TcpConnectionHandler(bufferSize), listener(listener),
@@ -69,8 +72,10 @@ namespace RTMP
 	{
 		MS_TRACE();
 
-		in_chunk_size  = SRS_CONSTS_RTMP_PROTOCOL_CHUNK_SIZE;
-		out_chunk_size = SRS_CONSTS_RTMP_PROTOCOL_CHUNK_SIZE;
+		in_chunk_size    = SRS_CONSTS_RTMP_PROTOCOL_CHUNK_SIZE;
+		out_chunk_size   = SRS_CONSTS_RTMP_PROTOCOL_CHUNK_SIZE;
+		show_debug_info  = true;
+		in_buffer_length = 0;
 
 		nb_out_iovs = 8 * SRS_CONSTS_IOVS_MAX;
 		out_iovs    = (uv_buf_t*)malloc(sizeof(uv_buf_t) * nb_out_iovs);
@@ -113,33 +118,139 @@ namespace RTMP
 		FREEPA(out_c0c3_caches);
 	}
 
+	void RtmpTcpConnection::OnRecvMessage(RtmpCommonMessage* msg)
+	{
+		srs_error_t err = srs_success;
+
+		// try to response acknowledgement
+		response_acknowledgement_message();
+
+		RtmpPacket* packet = nullptr;
+		switch (msg->header.message_type)
+		{
+			case RTMP_MSG_SetChunkSize:
+			case RTMP_MSG_UserControlMessage:
+			case RTMP_MSG_WindowAcknowledgementSize:
+				if ((err = decode_message(msg, &packet)) != srs_success)
+				{
+					MS_ERROR("decode message fail");
+					return;
+				}
+				break;
+			case RTMP_MSG_VideoMessage:
+			case RTMP_MSG_AudioMessage:
+				print_debug_info();
+			default:
+				// 获得的msg直接抛给上层
+				return this->listener->OnTcpConnectionPacketReceived(this, msg);
+		}
+
+		// always free the packet.
+		RtmpAutoFree(RtmpPacket, packet);
+
+		switch (msg->header.message_type)
+		{
+			case RTMP_MSG_WindowAcknowledgementSize:
+			{
+				RtmpSetWindowAckSizePacket* pkt = dynamic_cast<RtmpSetWindowAckSizePacket*>(packet);
+				srs_assert(pkt != NULL);
+				MS_DEBUG_DEV_STD("====>OnRecvMessage RtmpSetWindowAckSizePacket ");
+
+				if (pkt->ackowledgement_window_size > 0)
+				{
+					in_ack_size.window = (uint32_t)pkt->ackowledgement_window_size;
+					// @remark, we ignore this message, for user noneed to care.
+					// but it's important for dev, for client/server will block if required
+					// ack msg not arrived.
+				}
+				break;
+			}
+			case RTMP_MSG_SetChunkSize:
+			{
+				RtmpSetChunkSizePacket* pkt = dynamic_cast<RtmpSetChunkSizePacket*>(packet);
+				srs_assert(pkt != NULL);
+				MS_DEBUG_DEV_STD("====>OnRecvMessage RtmpSetChunkSizePacket ");
+
+				// for some server, the actual chunk size can greater than the max value(65536),
+				// so we just warning the invalid chunk size, and actually use it is ok,
+				// @see: https://github.com/ossrs/srs/issues/160
+				if (pkt->chunk_size < SRS_CONSTS_RTMP_MIN_CHUNK_SIZE || pkt->chunk_size > SRS_CONSTS_RTMP_MAX_CHUNK_SIZE)
+				{
+					MS_WARN_DEV(
+					  "accept chunk=%d, should in [%d, %d], please see #160",
+					  pkt->chunk_size,
+					  SRS_CONSTS_RTMP_MIN_CHUNK_SIZE,
+					  SRS_CONSTS_RTMP_MAX_CHUNK_SIZE);
+				}
+
+				// @see: https://github.com/ossrs/srs/issues/541
+				if (pkt->chunk_size < SRS_CONSTS_RTMP_MIN_CHUNK_SIZE)
+				{
+					MS_ERROR(
+					  "chunk size should be %d+, value=%d", SRS_CONSTS_RTMP_MIN_CHUNK_SIZE, pkt->chunk_size);
+					return;
+				}
+
+				in_chunk_size = pkt->chunk_size;
+				break;
+			}
+			case RTMP_MSG_UserControlMessage:
+			{
+				RtmpUserControlPacket* pkt = dynamic_cast<RtmpUserControlPacket*>(packet);
+				srs_assert(pkt != NULL);
+				MS_DEBUG_DEV_STD("====>OnRecvMessage RtmpUserControlPacket ");
+
+				if (pkt->event_type == SrcPCUCSetBufferLength)
+				{
+					in_buffer_length = pkt->extra_data;
+				}
+				if (pkt->event_type == SrcPCUCPingRequest)
+				{
+					if ((err = response_ping_message(pkt->event_data)) != srs_success)
+					{
+						MS_ERROR("response ping");
+						return;
+					}
+				}
+				break;
+			}
+			default:
+				break;
+		}
+		return;
+	}
+
 	/**
 	 * 每次收到数据都会调用UserOnTcpConnectionRead
 	 * handshake 数据也应该在这里实现，传入this.buffer* 及 recvBytes*即可在外部读取handshake字节。
 	 */
 	void RtmpTcpConnection::UserOnTcpConnectionRead()
 	{
-		static uint32_t times = 0;
+		// static uint32_t times = 0;
 		MS_TRACE();
 
-		if (b_showDebugLog)
-		{
-			MS_DEBUG_DEV_STD(
-			  "data received [local:%s :%" PRIu16 ", remote:%s :%" PRIu16 "] unRead:%" PRIu64
-			  ", times:%" PRIu32 ".",
-			  GetLocalIp().c_str(),
-			  GetLocalPort(),
-			  GetPeerIp().c_str(),
-			  GetPeerPort(),
-			  (size_t)(this->bufferDataLen - this->frameStart),
-			  times++);
-		}
+		// if (b_showDebugLog)
+		// {
+		// 	MS_DEBUG_DEV_STD(
+		// 	  "data received [local:%s :%" PRIu16 ", remote:%s :%" PRIu16 "] unRead:%" PRIu64
+		// 	  ", times:%" PRIu32 ".",
+		// 	  GetLocalIp().c_str(),
+		// 	  GetLocalPort(),
+		// 	  GetPeerIp().c_str(),
+		// 	  GetPeerPort(),
+		// 	  (size_t)(this->bufferDataLen - this->frameStart),
+		// 	  times++);
+		// }
 
-		// std::lock_guard<std::mutex> lock(globalReadMutex);
 		/**
 		 * if !handshake then run Handshake.class until handshake done.
 		 */
-		if (hsBytes->done)
+		if (!hsBytes->done)
+		{
+			RtmpHandshake handshake;
+			handshake.HandshakeWithClient(hsBytes, this);
+		}
+		else
 		{
 			/**
 			 * read rtmp tcp pecket;
@@ -191,15 +302,9 @@ namespace RTMP
 					continue;
 				}
 
-				// 获得的msg直接抛给上层
 				RtmpAutoFree(RtmpCommonMessage, msg);
-				this->listener->OnTcpConnectionPacketReceived(this, msg);
+				OnRecvMessage(msg);
 			}
-		}
-		else
-		{
-			RtmpHandshake handshake;
-			handshake.HandshakeWithClient(hsBytes, this);
 		}
 	}
 
@@ -940,11 +1045,10 @@ namespace RTMP
 			return srs_error_wrap(err, "send packet");
 		}
 
-		// if ((err = on_send_packet(&msg->header, packet)) != srs_success) //[dming]
-		// TODO:先忽略，后面再补
-		// {
-		// 	return srs_error_wrap(err, "on send packet");
-		// }
+		if ((err = on_send_packet(&msg->header, packet)) != srs_success)
+		{
+			return srs_error_wrap(err, "on send packet");
+		}
 
 		return err;
 	}
@@ -1214,6 +1318,373 @@ namespace RTMP
 		{
 			MS_DEBUG_DEV_STD("do_iovs_send send len=%" PRIu64 "", len);
 		}
+		return err;
+	}
+
+	srs_error_t RtmpTcpConnection::decode_message(RtmpCommonMessage* msg, RtmpPacket** ppacket)
+	{
+		*ppacket = nullptr;
+
+		srs_error_t err = srs_success;
+
+		srs_assert(msg != nullptr);
+		srs_assert(msg->payload != nullptr);
+		srs_assert(msg->size > 0);
+
+		Utils::RtmpBuffer stream(msg->payload, msg->size);
+
+		// decode the packet.
+		RtmpPacket* packet = nullptr;
+		if ((err = do_decode_message(msg->header, &stream, &packet)) != srs_success)
+		{
+			FREEP(packet);
+			return srs_error_wrap(err, "decode message");
+		}
+
+		// set to output ppacket only when success.
+		*ppacket = packet;
+
+		return err;
+	}
+
+	srs_error_t RtmpTcpConnection::do_decode_message(
+	  RtmpMessageHeader& header,
+	  Utils::RtmpBuffer* stream,
+	  RtmpPacket** ppacket) // [dming] do_decode_message
+	{
+		srs_error_t err = srs_success;
+
+		RtmpPacket* packet = nullptr;
+
+		// decode specified packet type
+		if (header.is_amf0_command() || header.is_amf3_command() || header.is_amf0_data() || header.is_amf3_data())
+		{
+			// skip 1bytes to decode the amf3 command.
+			if (header.is_amf3_command() && stream->require(1))
+			{
+				stream->skip(1);
+			}
+
+			// amf0 command message.
+			// need to read the command name.
+			std::string command;
+			if ((err = srs_amf0_read_string(stream, command)) != srs_success)
+			{
+				return srs_error_wrap(err, "decode command name");
+			}
+
+			// result/error packet
+			if (command == RTMP_AMF0_COMMAND_RESULT || command == RTMP_AMF0_COMMAND_ERROR)
+			{
+				double transactionId = 0.0;
+				if ((err = srs_amf0_read_number(stream, transactionId)) != srs_success)
+				{
+					return srs_error_wrap(err, "decode tid for %s", command.c_str());
+				}
+
+				// reset stream, for header read completed.
+				stream->skip(-1 * stream->pos());
+				if (header.is_amf3_command())
+				{
+					stream->skip(1);
+				}
+
+				// find the call name
+				if (requests.find(transactionId) == requests.end())
+				{
+					return srs_error_new(
+					  ERROR_RTMP_NO_REQUEST,
+					  "find request for command=%s, tid=%.2f",
+					  command.c_str(),
+					  transactionId);
+				}
+
+				std::string request_name = requests[transactionId];
+				if (request_name == RTMP_AMF0_COMMAND_CONNECT)
+				{
+					*ppacket = packet = new RtmpConnectAppResPacket();
+					return packet->decode(stream);
+				}
+				else if (request_name == RTMP_AMF0_COMMAND_CREATE_STREAM)
+				{
+					*ppacket = packet = new RtmpCreateStreamResPacket(0, 0);
+					return packet->decode(stream);
+				}
+				else if (request_name == RTMP_AMF0_COMMAND_RELEASE_STREAM)
+				{
+					*ppacket = packet = new RtmpFMLEStartResPacket(0);
+					return packet->decode(stream);
+				}
+				else if (request_name == RTMP_AMF0_COMMAND_FC_PUBLISH)
+				{
+					*ppacket = packet = new RtmpFMLEStartResPacket(0);
+					return packet->decode(stream);
+				}
+				else if (request_name == RTMP_AMF0_COMMAND_UNPUBLISH)
+				{
+					*ppacket = packet = new RtmpFMLEStartResPacket(0);
+					return packet->decode(stream);
+				}
+				else
+				{
+					return srs_error_new(
+					  ERROR_RTMP_NO_REQUEST, "request=%s, tid=%.2f", request_name.c_str(), transactionId);
+				}
+			}
+
+			// reset to zero(amf3 to 1) to restart decode.
+			stream->skip(-1 * stream->pos());
+			if (header.is_amf3_command())
+			{
+				stream->skip(1);
+			}
+
+			// decode command object.
+			if (command == RTMP_AMF0_COMMAND_CONNECT)
+			{
+				*ppacket = packet = new RtmpConnectAppPacket();
+				return packet->decode(stream);
+			}
+			else if (command == RTMP_AMF0_COMMAND_CREATE_STREAM)
+			{
+				*ppacket = packet = new RtmpCreateStreamPacket();
+				return packet->decode(stream);
+			}
+			else if (command == RTMP_AMF0_COMMAND_PLAY)
+			{
+				*ppacket = packet = new RtmpPlayPacket();
+				return packet->decode(stream);
+			}
+			else if (command == RTMP_AMF0_COMMAND_PAUSE)
+			{
+				*ppacket = packet = new RtmpPausePacket();
+				return packet->decode(stream);
+			}
+			else if (command == RTMP_AMF0_COMMAND_RELEASE_STREAM)
+			{
+				*ppacket = packet = new RtmpFMLEStartPacket();
+				return packet->decode(stream);
+			}
+			else if (command == RTMP_AMF0_COMMAND_FC_PUBLISH)
+			{
+				*ppacket = packet = new RtmpFMLEStartPacket();
+				return packet->decode(stream);
+			}
+			else if (command == RTMP_AMF0_COMMAND_PUBLISH)
+			{
+				*ppacket = packet = new RtmpPublishPacket();
+				return packet->decode(stream);
+			}
+			else if (command == RTMP_AMF0_COMMAND_UNPUBLISH)
+			{
+				*ppacket = packet = new RtmpFMLEStartPacket();
+				return packet->decode(stream);
+			}
+			else if (command == SRS_CONSTS_RTMP_SET_DATAFRAME)
+			{
+				*ppacket = packet = new RtmpOnMetaDataPacket();
+				return packet->decode(stream);
+			}
+			else if (command == SRS_CONSTS_RTMP_ON_METADATA)
+			{
+				*ppacket = packet = new RtmpOnMetaDataPacket();
+				return packet->decode(stream);
+			}
+			else if (command == RTMP_AMF0_COMMAND_CLOSE_STREAM)
+			{
+				*ppacket = packet = new RtmpCloseStreamPacket();
+				return packet->decode(stream);
+			}
+			else if (header.is_amf0_command() || header.is_amf3_command())
+			{
+				*ppacket = packet = new RtmpCallPacket();
+				return packet->decode(stream);
+			}
+
+			// default packet to drop message.
+			*ppacket = packet = new RtmpPacket();
+			return err;
+		}
+		else if (header.is_user_control_message())
+		{
+			*ppacket = packet = new RtmpUserControlPacket();
+			return packet->decode(stream);
+		}
+		else if (header.is_window_ackledgement_size())
+		{
+			*ppacket = packet = new RtmpSetWindowAckSizePacket();
+			return packet->decode(stream);
+		}
+		else if (header.is_ackledgement())
+		{
+			*ppacket = packet = new RtmpAcknowledgementPacket();
+			return packet->decode(stream);
+		}
+		else if (header.is_set_chunk_size())
+		{
+			*ppacket = packet = new RtmpSetChunkSizePacket();
+			return packet->decode(stream);
+		}
+		else
+		{
+			if (!header.is_set_peer_bandwidth() && !header.is_ackledgement())
+			{
+				MS_DEBUG_DEV_STD("drop unknown message, type=%d", header.message_type);
+			}
+		}
+
+		return err;
+	}
+
+	srs_error_t RtmpTcpConnection::on_send_packet(RtmpMessageHeader* mh, RtmpPacket* packet)
+	{
+		srs_error_t err = srs_success;
+
+		// ignore raw bytes oriented RTMP message.
+		if (packet == nullptr)
+		{
+			return err;
+		}
+
+		switch (mh->message_type)
+		{
+			case RTMP_MSG_SetChunkSize:
+			{
+				RtmpSetChunkSizePacket* pkt = dynamic_cast<RtmpSetChunkSizePacket*>(packet);
+				out_chunk_size              = pkt->chunk_size;
+				break;
+			}
+			case RTMP_MSG_WindowAcknowledgementSize:
+			{
+				RtmpSetWindowAckSizePacket* pkt = dynamic_cast<RtmpSetWindowAckSizePacket*>(packet);
+				out_ack_size.window             = (uint32_t)pkt->ackowledgement_window_size;
+				break;
+			}
+			case RTMP_MSG_AMF0CommandMessage:
+			case RTMP_MSG_AMF3CommandMessage:
+			{
+				if (true)
+				{
+					RtmpConnectAppPacket* pkt = dynamic_cast<RtmpConnectAppPacket*>(packet);
+					if (pkt)
+					{
+						requests[pkt->transaction_id] = pkt->command_name;
+						break;
+					}
+				}
+				if (true)
+				{
+					RtmpCreateStreamPacket* pkt = dynamic_cast<RtmpCreateStreamPacket*>(packet);
+					if (pkt)
+					{
+						requests[pkt->transaction_id] = pkt->command_name;
+						break;
+					}
+				}
+				if (true)
+				{
+					RtmpFMLEStartPacket* pkt = dynamic_cast<RtmpFMLEStartPacket*>(packet);
+					if (pkt)
+					{
+						requests[pkt->transaction_id] = pkt->command_name;
+						break;
+					}
+				}
+				break;
+			}
+			case RTMP_MSG_VideoMessage:
+			case RTMP_MSG_AudioMessage:
+				print_debug_info();
+			default:
+				break;
+		}
+
+		return err;
+	}
+
+	void RtmpTcpConnection::print_debug_info()
+	{
+		if (show_debug_info)
+		{
+			show_debug_info = false;
+			MS_DEBUG_DEV_STD(
+			  "protocol in.buffer=%d, in.ack=%d, out.ack=%d, in.chunk=%d, out.chunk=%d",
+			  in_buffer_length,
+			  in_ack_size.window,
+			  out_ack_size.window,
+			  in_chunk_size,
+			  out_chunk_size);
+		}
+	}
+
+	srs_error_t RtmpTcpConnection::response_ping_message(int32_t timestamp)
+	{
+		srs_error_t err = srs_success;
+
+		MS_DEBUG_DEV_STD("get a ping request, response it. timestamp=%d", timestamp);
+
+		RtmpUserControlPacket* pkt = new RtmpUserControlPacket();
+
+		pkt->event_type = SrcPCUCPingResponse;
+		pkt->event_data = timestamp;
+
+		// // cache the message and use flush to send.
+		// if (!auto_response_when_recv)
+		// {
+		// 	manual_response_queue.push_back(pkt);
+		// 	return err;
+		// }
+
+		// use underlayer api to send, donot flush again.
+		if ((err = send_and_free_packet(pkt, 0)) != srs_success)
+		{
+			return srs_error_wrap(err, "ping response");
+		}
+
+		return err;
+	}
+
+	srs_error_t RtmpTcpConnection::response_acknowledgement_message()
+	{
+		srs_error_t err = srs_success;
+
+		if (in_ack_size.window <= 0)
+		{
+			return err;
+		}
+
+		// ignore when delta bytes not exceed half of window(ack size).
+		uint32_t delta = (uint32_t)(GetRecvBytes() - in_ack_size.nb_recv_bytes);
+		if (delta < in_ack_size.window / 2)
+		{
+			return err;
+		}
+		in_ack_size.nb_recv_bytes = GetRecvBytes();
+
+		// when the sequence number overflow, reset it.
+		uint32_t sequence_number = in_ack_size.sequence_number + delta;
+		if (sequence_number > 0xf0000000)
+		{
+			sequence_number = delta;
+		}
+		in_ack_size.sequence_number = sequence_number;
+
+		RtmpAcknowledgementPacket* pkt = new RtmpAcknowledgementPacket();
+		pkt->sequence_number           = sequence_number;
+
+		// // cache the message and use flush to send.
+		// if (!auto_response_when_recv)
+		// {
+		// 	manual_response_queue.push_back(pkt);
+		// 	return err;
+		// }
+
+		// use underlayer api to send, donot flush again.
+		if ((err = do_send_and_free_packet(pkt, 0)) != srs_success)
+		{
+			return srs_error_wrap(err, "send ack");
+		}
+
 		return err;
 	}
 } // namespace RTMP

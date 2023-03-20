@@ -94,17 +94,12 @@ namespace RTMP
 		{
 			sessions_.erase(sessionIt);
 			RtmpSession* session = sessionIt->second;
-			// [dming] TODO: need erase the session in router
-			RtmpRouter* router = FetchRouter(session->GetStreamUrl());
+			RtmpRouter* router   = FetchRouter(session->GetStreamUrl());
 			if (router)
 			{
 				MS_DEBUG_DEV_STD(
 				  "OnRtcTcpConnectionClosed fetch router of url:=%s", session->GetStreamUrl().c_str());
 				router->RemoveSession(session);
-			}
-			else
-			{
-				MS_ERROR_STD("cannot fetch router of url: %s", session->GetStreamUrl().c_str());
 			}
 			MS_DEBUG_DEV_STD(
 			  "OnRtcTcpConnectionClosed FREEP(session) of url:=%s", session->GetStreamUrl().c_str());
