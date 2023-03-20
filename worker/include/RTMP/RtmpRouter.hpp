@@ -3,10 +3,9 @@
 
 #include "CplxError.hpp"
 #include "RTMP/RtmpCodec.hpp"
-#include "RTMP/RtmpConsumer.hpp"
 #include "RTMP/RtmpFormat.hpp"
+#include "RTMP/RtmpKernel.hpp"
 #include "RTMP/RtmpMessage.hpp"
-#include "RTMP/RtmpPublisher.hpp"
 #include <map>
 #include <stdint.h>
 #include <unordered_map>
@@ -16,6 +15,8 @@ namespace RTMP
 {
 	class RtmpSession;
 	class RtmpRequest;
+	class RtmpConsumer;
+	class RtmpPublisher;
 
 	// The time jitter algorithm:
 	// 1. full, to ensure stream start at zero, and ensure stream monotonically increasing.
@@ -106,7 +107,7 @@ namespace RTMP
 		// // @param dm Whether dumps the metadata.
 		// // @param ds Whether dumps the sequence header.
 		virtual srs_error_t dumps(
-		  RtmpConsumer* consumer, bool atc, int streamId, RtmpRtmpJitterAlgorithm ag, bool dm, bool ds);
+		  RtmpConsumer* consumer, bool atc, RtmpRtmpJitterAlgorithm ag, bool dm, bool ds);
 
 	public:
 		// Previous exists sequence header.
@@ -214,7 +215,7 @@ namespace RTMP
 		// otherwise, adjust msg time to start from 0 to make flash happy.
 		bool atc;
 		// The gop cache for client fast startup.
-		RtmpGopCache* gop_cache;
+		RtmpGopCache* gop_cache_;
 		// The metadata cache.
 		RtmpMetaCache* meta;
 		// The format, codec information.

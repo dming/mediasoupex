@@ -4,6 +4,8 @@
 #include "RTMP/RtmpRouter.hpp"
 #include "CplxError.hpp"
 #include "Logger.hpp"
+#include "RTMP/RtmpConsumer.hpp"
+#include "RTMP/RtmpPublisher.hpp"
 #include "RTMP/RtmpSession.hpp"
 #include "RTMP/RtmpTcpConnection.hpp"
 #include "RTMP/RtmpUtility.hpp"
@@ -260,12 +262,12 @@ namespace RTMP
 	}
 
 	srs_error_t RtmpMetaCache::dumps(
-	  RtmpConsumer* consumer, bool atc, int streamId, RtmpRtmpJitterAlgorithm ag, bool dm, bool ds)
+	  RtmpConsumer* consumer, bool atc, RtmpRtmpJitterAlgorithm ag, bool dm, bool ds)
 	{
 		srs_error_t err = srs_success;
 
 		// copy metadata.
-		if (dm && meta && (err = consumer->send_and_free_message(meta->copy(), streamId)) != srs_success)
+		if (dm && meta && (err = consumer->enqueue(meta, atc, ag)) != srs_success)
 		{
 			return srs_error_wrap(err, "enqueue metadata");
 		}
@@ -275,15 +277,23 @@ namespace RTMP
 		// @see https://github.com/ossrs/srs/issues/301
 		if (aformat && aformat->acodec && aformat->acodec->id != SrsAudioCodecIdMP3)
 		{
-			if (ds && audio && (err = consumer->send_and_free_message(audio->copy(), streamId)) != srs_success)
+			if (ds && audio)
 			{
-				return srs_error_wrap(err, "enqueue audio sh");
+				MS_DEBUG_DEV_STD("send audio aformat->acodec->id=%d", aformat->acodec->id);
+				if ((err = consumer->enqueue(audio, atc, ag)) != srs_success)
+				{
+					return srs_error_wrap(err, "enqueue audio sh");
+				}
 			}
 		}
 
-		if (ds && video && (err = consumer->send_and_free_message(video->copy(), streamId)) != srs_success)
+		if (ds && video)
 		{
-			return srs_error_wrap(err, "enqueue video sh");
+			MS_DEBUG_DEV_STD("send video");
+			if ((err = consumer->enqueue(video, atc, ag)) != srs_success)
+			{
+				return srs_error_wrap(err, "enqueue video sh");
+			}
 		}
 
 		return err;
@@ -458,7 +468,10 @@ namespace RTMP
 			codec_ok = codec_ok ? true : RtmpFlvVideo::hevc(msg->payload, msg->size);
 #endif
 			if (!codec_ok)
+			{
+				MS_ERROR_STD("Drop video when not h.264 or h.265.");
 				return err;
+			}
 
 			cached_video_count++;
 			audio_after_last_video_count = 0;
@@ -487,6 +500,7 @@ namespace RTMP
 		// clear gop cache when got key frame
 		if (msg->is_video() && RtmpFlvVideo::keyframe(msg->payload, msg->size))
 		{
+			MS_DEBUG_DEV_STD("Gop cache keyframe and clear before size=%" PRIu64, gop_cache.size());
 			clear();
 
 			// curent msg is video frame, so we set to 1.
@@ -513,6 +527,7 @@ namespace RTMP
 
 	void RtmpGopCache::clear()
 	{
+		MS_DEBUG_DEV_STD("RtmpGopCache::clear");
 		std::vector<RtmpSharedPtrMessage*>::iterator it;
 		for (it = gop_cache.begin(); it != gop_cache.end(); ++it)
 		{
@@ -533,8 +548,7 @@ namespace RTMP
 		for (it = gop_cache.begin(); it != gop_cache.end(); ++it)
 		{
 			RtmpSharedPtrMessage* msg = *it;
-			// if ((err = consumer->enqueue(msg, atc, jitter_algorithm)) != srs_success)
-			if ((err = consumer->send_and_free_message(msg->copy(), consumer->GetSession()->GetStreamId())) != srs_success)
+			if ((err = consumer->enqueue(msg, atc, jitter_algorithm)) != srs_success)
 			{
 				return srs_error_wrap(err, "enqueue message");
 			}
@@ -577,11 +591,13 @@ namespace RTMP
 		mix_correct = false;
 		mix_queue   = new RtmpMixQueue();
 
-		gop_cache = new RtmpGopCache();
+		gop_cache_ = new RtmpGopCache();
 
-		meta             = new RtmpMetaCache();
-		format_          = new RtmpRtmpFormat();
-		last_packet_time = 0;
+		meta    = new RtmpMetaCache();
+		format_ = new RtmpRtmpFormat();
+
+		is_monotonically_increase = false;
+		last_packet_time          = 0;
 
 		atc = false;
 	}
@@ -589,7 +605,7 @@ namespace RTMP
 	RtmpRouter::~RtmpRouter()
 	{
 		FREEP(req_);
-		FREEP(gop_cache);
+		FREEP(gop_cache_);
 		FREEP(meta);
 		FREEP(format_);
 		FREEP(mix_queue);
@@ -601,14 +617,15 @@ namespace RTMP
 		MS_DEBUG_DEV_STD("initualize req stream url=%s", req->get_stream_url().c_str());
 		req_ = req->copy();
 		MS_DEBUG_DEV_STD("initualize done. req stream url=%s", req->get_stream_url().c_str());
+
+		jitter_algorithm = RtmpRtmpJitterAlgorithmOFF; // TODO: read from conf
 		return err;
 	}
 
 	srs_error_t RtmpRouter::CreatePublisher(RtmpSession* session, RtmpPublisher** publisher)
 	{
-		MS_DEBUG_DEV_STD("CreatePublisher start 0 !!!");
+		MS_DEBUG_DEV_STD("CreatePublisher start");
 		srs_error_t err = srs_success;
-		MS_DEBUG_DEV_STD("CreatePublisher start 1 !!!");
 		if (publisher_)
 		{
 			MS_DEBUG_DEV_STD("CreatePublisher start 1 error !!!");
@@ -617,10 +634,12 @@ namespace RTMP
 			return srs_error_new(ERROR_RTMP_SOUP_ERROR, "publisher_ already in router");
 		}
 
-		MS_DEBUG_DEV_STD("CreatePublisher start 2 !!!");
-		publisher_ = new RtmpPublisher(this, session);
-		MS_DEBUG_DEV_STD("CreatePublisher start 3 !!!");
-		*publisher = publisher_;
+		publisher_                = new RtmpPublisher(this, session);
+		*publisher                = publisher_;
+		is_monotonically_increase = true;
+		last_packet_time          = 0;
+		gop_cache_->clear();
+		meta->dispose();
 		MS_DEBUG_DEV_STD("CreatePublisher : %s", session->GetStreamUrl().c_str());
 		return err;
 	}
@@ -630,10 +649,10 @@ namespace RTMP
 		srs_error_t err = srs_success;
 		if (publisher_ && publisher_->GetSession() == session)
 		{
-			MS_DEBUG_DEV_STD("RemoveSession remove Publisher 2");
+			MS_DEBUG_DEV_STD("RemoveSession remove Publisher");
 			FREEP(publisher_);
-			// gop_cache->clear();
-			// meta->clear();
+			gop_cache_->clear();
+			meta->dispose();
 			return err;
 		}
 
@@ -681,16 +700,13 @@ namespace RTMP
 			// Copy metadata and sequence header to consumer.
 			bool dm = true;
 			bool ds = true;
-			if (
-			  (err = meta->dumps(
-			     consumer, atc, consumer->GetSession()->GetStreamId(), RtmpRtmpJitterAlgorithmOFF, dm, ds)) !=
-			  srs_success)
+			if ((err = meta->dumps(consumer, atc, jitter_algorithm, dm, ds)) != srs_success)
 			{
 				return srs_error_wrap(err, "meta dumps");
 			}
 
 			// copy gop cache to client.
-			if ((err = gop_cache->dump(consumer, atc, jitter_algorithm)) != srs_success)
+			if ((err = gop_cache_->dump(consumer, atc, jitter_algorithm)) != srs_success)
 			{
 				return srs_error_wrap(err, "gop cache dumps");
 			}
@@ -708,7 +724,7 @@ namespace RTMP
 			if (last_packet_time > 0 && shared_audio->header.timestamp < last_packet_time)
 			{
 				is_monotonically_increase = false;
-				MS_WARN_DEV(
+				MS_WARN_DEV_STD(
 				  "AUDIO: Timestamp %" PRId64 "=>%" PRId64 ", may need mix_correct.",
 				  last_packet_time,
 				  shared_audio->header.timestamp);
@@ -785,7 +801,7 @@ namespace RTMP
 			if (meta->previous_ash()->size == msg->size)
 			{
 				drop_for_reduce = srs_bytes_equals(meta->previous_ash()->payload, msg->payload, msg->size);
-				MS_WARN_DEV(
+				MS_WARN_DEV_STD(
 				  "drop for reduce sh audio, size=%d, drop_for_reduce=%d", msg->size, drop_for_reduce);
 			}
 		}
@@ -808,14 +824,10 @@ namespace RTMP
 			for (auto kv : consumers_)
 			{
 				RTMP::RtmpConsumer* consumer = kv.second;
-				if ((err = consumer->send_and_free_message(msg->copy(), consumer->GetSession()->GetStreamId())) != srs_success)
+				if ((err = consumer->enqueue(msg, atc, jitter_algorithm)) != srs_success)
 				{
 					return srs_error_wrap(err, "consume message");
 				}
-				// if ((err = consumer->enqueue(msg, atc, jitter_algorithm)) != srs_success)
-				// {
-				// 	return srs_error_wrap(err, "consume message");
-				// }
 			}
 		}
 
@@ -835,7 +847,7 @@ namespace RTMP
 		}
 
 		// cache the last gop packets
-		if ((err = gop_cache->cache(msg)) != srs_success)
+		if ((err = gop_cache_->cache(msg)) != srs_success)
 		{
 			return srs_error_wrap(err, "gop cache consume audio");
 		}
@@ -866,7 +878,7 @@ namespace RTMP
 			if (last_packet_time > 0 && shared_video->header.timestamp < last_packet_time)
 			{
 				is_monotonically_increase = false;
-				MS_WARN_DEV(
+				MS_WARN_DEV_STD(
 				  "VIDEO: Timestamp %" PRId64 "=>%" PRId64 ", may need mix_correct.",
 				  last_packet_time,
 				  shared_video->header.timestamp);
@@ -884,7 +896,7 @@ namespace RTMP
 				b0 = shared_video->payload[0];
 			}
 
-			MS_WARN_DEV("drop unknown header video, size=%d, bytes[0]=%#x", shared_video->size, b0);
+			MS_WARN_DEV_STD("drop unknown header video, size=%d, bytes[0]=%#x", shared_video->size, b0);
 			return err;
 		}
 
@@ -990,14 +1002,10 @@ namespace RTMP
 			for (auto kv : consumers_)
 			{
 				RTMP::RtmpConsumer* consumer = kv.second;
-				if ((err = consumer->send_and_free_message(msg->copy(), consumer->GetSession()->GetStreamId())) != srs_success)
+				if ((err = consumer->enqueue(msg, atc, jitter_algorithm)) != srs_success)
 				{
 					return srs_error_wrap(err, "consume message");
 				}
-				// if ((err = consumer->enqueue(msg, atc, jitter_algorithm)) != srs_success)
-				// {
-				// 	return srs_error_wrap(err, "consume message");
-				// }
 			}
 		}
 
@@ -1008,7 +1016,7 @@ namespace RTMP
 		}
 
 		// cache the last gop packets
-		if ((err = gop_cache->cache(msg)) != srs_success)
+		if ((err = gop_cache_->cache(msg)) != srs_success)
 		{
 			return srs_error_wrap(err, "gop cache consume vdieo");
 		}
@@ -1183,7 +1191,7 @@ namespace RTMP
 			for (auto kv : consumers_)
 			{
 				RTMP::RtmpConsumer* consumer = kv.second;
-				if ((err = consumer->send_and_free_message(meta->data(), consumer->GetSession()->GetStreamId())) != srs_success)
+				if ((err = consumer->enqueue(meta->data(), atc, jitter_algorithm)) != srs_success)
 				{
 					return srs_error_wrap(err, "consume message");
 				}

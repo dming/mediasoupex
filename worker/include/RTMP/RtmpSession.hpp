@@ -12,6 +12,7 @@
 #include "RTMP/RtmpKernel.hpp"
 #include "RTMP/RtmpTcpConnection.hpp"
 #include "RTC/TransportTuple.hpp"
+// #include <mutex>
 
 namespace RTMP
 {
@@ -99,6 +100,8 @@ namespace RTMP
 		RtmpTcpConnection* connection_;
 		RtmpServer* rtmpServer_;
 		RtmpTransport* transport_;
+
+		// std::mutex messageMutex;
 	};
 } // namespace RTMP
 #endif

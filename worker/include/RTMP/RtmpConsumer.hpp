@@ -5,8 +5,6 @@
 
 namespace RTMP
 {
-	class RtmpRouter;
-	class RtmpRtmpJitter;
 	class RtmpConsumer : public RTMP::RtmpTransport
 	{
 	public:
@@ -17,6 +15,8 @@ namespace RTMP
 		srs_error_t OnRecvMessage(RTC::TransportTuple* tuple, RtmpCommonMessage* msg) override;
 
 	public:
+		virtual srs_error_t enqueue(RtmpSharedPtrMessage* shared_msg, bool atc, RtmpRtmpJitterAlgorithm ag);
+
 		// Get current client time, the last packet time.
 		virtual int64_t get_time();
 

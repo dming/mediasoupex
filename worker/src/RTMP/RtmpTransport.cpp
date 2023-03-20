@@ -4,7 +4,6 @@
 #include "RTMP/RtmpTransport.hpp"
 #include "CplxError.hpp"
 #include "Logger.hpp"
-#include "RTMP/RtmpRouter.hpp"
 
 namespace RTMP
 {

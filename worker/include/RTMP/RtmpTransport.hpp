@@ -3,6 +3,7 @@
 
 #include "CplxError.hpp"
 #include "RTMP/RtmpMessage.hpp"
+#include "RTMP/RtmpRouter.hpp"
 #include "RTMP/RtmpSession.hpp"
 #include "RTC/TransportTuple.hpp"
 

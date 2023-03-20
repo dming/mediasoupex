@@ -4,7 +4,6 @@
 #include "RTMP/RtmpConsumer.hpp"
 #include "CplxError.hpp"
 #include "Logger.hpp"
-#include "RTMP/RtmpRouter.hpp"
 
 namespace RTMP
 {
@@ -23,13 +22,9 @@ namespace RTMP
 	// see RtmpRtmpConn::process_play_control_msg
 	srs_error_t RtmpConsumer::OnRecvMessage(RTC::TransportTuple* tuple, RtmpCommonMessage* msg)
 	{
-		srs_error_t err = srs_success;
+		MS_DEBUG_DEV_STD("recv msg type is %d", msg->header.message_type);
 
-		if (!msg)
-		{
-			return err;
-		}
-		RtmpAutoFree(RtmpCommonMessage, msg);
+		srs_error_t err = srs_success;
 
 		if (!msg->header.is_amf0_command() && !msg->header.is_amf3_command())
 		{
@@ -90,6 +85,24 @@ namespace RTMP
 		}
 
 		return err;
+	}
+
+	srs_error_t RtmpConsumer::enqueue(
+	  RtmpSharedPtrMessage* shared_msg, bool atc, RtmpRtmpJitterAlgorithm ag)
+	{
+		srs_error_t err = srs_success;
+
+		RtmpSharedPtrMessage* msg = shared_msg->copy();
+
+		if (!atc)
+		{
+			if ((err = jitter_->correct(msg, ag)) != srs_success)
+			{
+				return srs_error_wrap(err, "consume message");
+			}
+		}
+
+		return send_and_free_message(msg, GetSession()->GetStreamId());
 	}
 
 	int64_t RtmpConsumer::get_time()

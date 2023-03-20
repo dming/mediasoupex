@@ -640,9 +640,9 @@ namespace RTMP
 			  ERROR_RTMP_SOUP_ERROR, "cannot read %" PRId32 " bytes message header", bhLen + mhSize);
 		}
 
-		MessageHeader header;
-		memset(&header, 0, sizeof(MessageHeader));
-		memcpy(&header, this->buffer + this->frameStart + bhLen, mhSize);
+		MessageHeader _header;
+		memset(&_header, 0, sizeof(MessageHeader));
+		memcpy(&_header, this->buffer + this->frameStart + bhLen, mhSize);
 
 		/**
 		 * parse the message header.
@@ -659,10 +659,10 @@ namespace RTMP
 		// see also: ngx_rtmp_recv
 		if (fmt <= RTMP_FMT_TYPE2)
 		{
-			int32_t timestamp_delta = Utils::Byte::ReadUint24BE((char*)header.timestampDelta); // 改成大端序
-
-			bool extenedTimestamp = (timestamp_delta >= RTMP_EXTENDED_TIMESTAMP);
-			if (extenedTimestamp)
+			chunk->header.timestamp_delta =
+			  Utils::Byte::ReadUint24BE((char*)_header.timestampDelta); // 改成大端序
+			bool b_extenedTimestamp = (chunk->header.timestamp_delta >= RTMP_EXTENDED_TIMESTAMP);
+			if (b_extenedTimestamp)
 			{
 				mhSize += 4;
 				if (dataLen < bhLen + mhSize)
@@ -677,7 +677,7 @@ namespace RTMP
 			int32_t payloadLen = chunk->header.payload_length;
 			if (fmt <= RTMP_FMT_TYPE1)
 			{
-				payloadLen = Utils::Byte::ReadUint24BE((char*)header.payloadLength);
+				payloadLen = Utils::Byte::ReadUint24BE((char*)_header.payloadLength);
 			}
 			int payloadSize = payloadLen - chunk->msg->size;
 			payloadSize     = std::min(payloadSize, in_chunk_size);
@@ -708,7 +708,7 @@ namespace RTMP
 			// 0x00ffffff), this value MUST be 16777215, and the 'extended
 			// timestamp header' MUST be present. Otherwise, this value SHOULD be
 			// the entire delta.
-			chunk->extended_timestamp = extenedTimestamp;
+			chunk->extended_timestamp = b_extenedTimestamp;
 			if (!chunk->extended_timestamp)
 			{
 				// Extended timestamp: 0 or 4 bytes
@@ -758,11 +758,11 @@ namespace RTMP
 				}
 
 				chunk->header.payload_length = payload_length;
-				chunk->header.message_type   = header.messageType;
+				chunk->header.message_type   = _header.messageType;
 
 				if (fmt == RTMP_FMT_TYPE0)
 				{
-					chunk->header.stream_id = Utils::Byte::ReadUint24LE((char*)header.streamId);
+					chunk->header.stream_id = Utils::Byte::ReadUint24LE((char*)_header.streamId);
 				}
 			}
 		}
@@ -1233,60 +1233,60 @@ namespace RTMP
 
 		return err;
 #else
-		// try to send use the c0c3 header cache,
-		// if cache is consumed, try another loop.
-		for (int i = 0; i < nb_msgs; i++)
-		{
-			RtmpSharedPtrMessage* msg = msgs[i];
+		// // try to send use the c0c3 header cache,
+		// // if cache is consumed, try another loop.
+		// for (int i = 0; i < nb_msgs; i++)
+		// {
+		// 	RtmpSharedPtrMessage* msg = msgs[i];
 
-			if (!msg)
-			{
-				continue;
-			}
+		// 	if (!msg)
+		// 	{
+		// 		continue;
+		// 	}
 
-			// ignore empty message.
-			if (!msg->payload || msg->size <= 0)
-			{
-				continue;
-			}
+		// 	// ignore empty message.
+		// 	if (!msg->payload || msg->size <= 0)
+		// 	{
+		// 		continue;
+		// 	}
 
-			// p set to current write position,
-			// it's ok when payload is nullptr and size is 0.
-			char* p    = msg->payload;
-			char* pend = msg->payload + msg->size;
+		// 	// p set to current write position,
+		// 	// it's ok when payload is nullptr and size is 0.
+		// 	char* p    = msg->payload;
+		// 	char* pend = msg->payload + msg->size;
 
-			// always write the header event payload is empty.
-			while (p < pend)
-			{
-				// for simple send, send each chunk one by one
-				iovec* iovs      = out_iovs;
-				char* c0c3_cache = out_c0c3_caches;
-				int nb_cache     = SRS_CONSTS_C0C3_HEADERS_MAX;
+		// 	// always write the header event payload is empty.
+		// 	while (p < pend)
+		// 	{
+		// 		// for simple send, send each chunk one by one
+		// 		iovec* iovs      = out_iovs;
+		// 		char* c0c3_cache = out_c0c3_caches;
+		// 		int nb_cache     = SRS_CONSTS_C0C3_HEADERS_MAX;
 
-				// always has header
-				int nbh = msg->chunk_header(c0c3_cache, nb_cache, p == msg->payload);
-				srs_assert(nbh > 0);
+		// 		// always has header
+		// 		int nbh = msg->chunk_header(c0c3_cache, nb_cache, p == msg->payload);
+		// 		srs_assert(nbh > 0);
 
-				// header iov
-				iovs[0].iov_base = c0c3_cache;
-				iovs[0].iov_len  = nbh;
+		// 		// header iov
+		// 		iovs[0].iov_base = c0c3_cache;
+		// 		iovs[0].iov_len  = nbh;
 
-				// payload iov
-				int payload_size = std::min(out_chunk_size, pend - p);
-				iovs[1].iov_base = p;
-				iovs[1].iov_len  = payload_size;
+		// 		// payload iov
+		// 		int payload_size = std::min(out_chunk_size, pend - p);
+		// 		iovs[1].iov_base = p;
+		// 		iovs[1].iov_len  = payload_size;
 
-				// consume sendout bytes.
-				p += payload_size;
+		// 		// consume sendout bytes.
+		// 		p += payload_size;
 
-				if ((er = skt->writev(iovs, 2, nullptr)) != srs_success)
-				{
-					return srs_error_wrap(err, "writev");
-				}
-			}
-		}
+		// 		if ((er = skt->writev(iovs, 2, nullptr)) != srs_success)
+		// 		{
+		// 			return srs_error_wrap(err, "writev");
+		// 		}
+		// 	}
+		// }
 
-		return err;
+		// return err;
 #endif
 	}
 
@@ -1298,22 +1298,17 @@ namespace RTMP
 			MS_DEBUG_DEV_STD("do_iovs_send send size=%d", size);
 		}
 		size_t len = 0;
+
+		std::vector<WriteData> datas;
 		for (int i = 0; i < size; ++i)
 		{
 			uv_buf_t* iov = iovs + i;
 			len += iov->len;
-		}
-		char* data = new char[len];
-		len        = 0;
-		for (int i = 0; i < size; ++i)
-		{
-			uv_buf_t* iov = iovs + i;
-			memcpy(data + len, iov->base, iov->len);
-			len += iov->len;
-			// data += iov->len;
+			datas.emplace_back((const uint8_t*)iov->base, (size_t)iov->len);
 		}
 
-		Send((const uint8_t*)data, len, nullptr);
+		::TcpConnectionHandler::Write(datas, nullptr);
+
 		if (b_showDebugLog)
 		{
 			MS_DEBUG_DEV_STD("do_iovs_send send len=%" PRIu64 "", len);
@@ -1497,6 +1492,9 @@ namespace RTMP
 			}
 			else if (header.is_amf0_command() || header.is_amf3_command())
 			{
+				// as command is "getStreamLength"
+				MS_DEBUG_DEV_STD(
+				  "Unknow command, command is %s . just return RtmpCallPacket", command.c_str());
 				*ppacket = packet = new RtmpCallPacket();
 				return packet->decode(stream);
 			}

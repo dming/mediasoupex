@@ -4,7 +4,9 @@
 #include "RTMP/RtmpSession.hpp"
 #include "CplxError.hpp"
 #include "Logger.hpp"
+#include "RTMP/RtmpConsumer.hpp"
 #include "RTMP/RtmpHttp.hpp"
+#include "RTMP/RtmpPublisher.hpp"
 #include "RTMP/RtmpRouter.hpp"
 #include "RTMP/RtmpServer.hpp"
 #include "RTMP/RtmpTransport.hpp"
@@ -29,7 +31,6 @@ namespace RTMP
 
 		// NOTE: connection will be free in TcpServerHandler::OnTcpConnectionClosed
 		FREEP(info_);
-		FREEP(connection_);
 		connection_ = nullptr;
 		rtmpServer_ = nullptr;
 		transport_  = nullptr;
@@ -41,7 +42,7 @@ namespace RTMP
 		MS_TRACE();
 		// std::lock_guard<std::mutex> lock(messageMutex);
 		RTC::TransportTuple tuple(connection);
-		if (transport_ != nullptr)
+		if (transport_)
 		{
 			transport_->RecvMessage(&tuple, msg);
 		}
@@ -57,22 +58,18 @@ namespace RTMP
 
 		srs_error_t err = srs_success;
 
-		RTMP::RtmpPacket* packet;
-
 		if (msg->header.is_ackledgement())
 		{
 			MS_DEBUG_DEV_STD("====>OnRecvMessage RtmpAcknowledgementPacket ");
-			if ((err = connection_->decode_message(msg, &packet)) != srs_success)
-			{
-				return srs_error_wrap(err, "decode message");
-			}
 		}
 		else if (msg->header.is_amf0_command() || msg->header.is_amf3_command())
 		{
+			RtmpPacket* packet;
 			if ((err = connection_->decode_message(msg, &packet)) != srs_success)
 			{
 				return srs_error_wrap(err, "decode message");
 			}
+			RtmpAutoFree(RtmpPacket, packet);
 			if (RtmpConnectAppPacket* m_packet = dynamic_cast<RtmpConnectAppPacket*>(packet))
 			{
 				MS_DEBUG_DEV_STD("====>OnRecvMessage RtmpConnectAppPacket ");
@@ -109,7 +106,8 @@ namespace RTMP
 			}
 			else if (RtmpCallPacket* m_packet = dynamic_cast<RtmpCallPacket*>(packet))
 			{
-				MS_DEBUG_DEV_STD("====>OnRecvMessage RtmpCallPacket ");
+				MS_DEBUG_DEV_STD(
+				  "====>OnRecvMessage RtmpCallPacket command name is:", m_packet->command_name.c_str());
 				// only response it when transaction id not zero,
 				// for the zero means donot need response.
 				if (m_packet->transaction_id > 0)

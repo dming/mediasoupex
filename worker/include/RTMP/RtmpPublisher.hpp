@@ -6,7 +6,6 @@
 
 namespace RTMP
 {
-	class RtmpRouter;
 	class RtmpPublisher : public RTMP::RtmpTransport
 	{
 	public:

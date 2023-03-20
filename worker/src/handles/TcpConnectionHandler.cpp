@@ -180,7 +180,7 @@ void TcpConnectionHandler::Write(
 	MS_TRACE();
 	std::vector<WriteData> datas;
 	datas.emplace_back(data1, len1);
-	Write(std::move(datas), cb);
+	Write(datas, cb);
 }
 
 void TcpConnectionHandler::Write(
@@ -194,10 +194,10 @@ void TcpConnectionHandler::Write(
 	std::vector<WriteData> datas;
 	datas.emplace_back(data1, len1);
 	datas.emplace_back(data2, len2);
-	Write(std::move(datas), cb);
+	Write(datas, cb);
 }
 
-void TcpConnectionHandler::Write(std::vector<WriteData>&& datas, TcpConnectionHandler::onSendCallback* cb)
+void TcpConnectionHandler::Write(std::vector<WriteData>& datas, TcpConnectionHandler::onSendCallback* cb)
 {
 	MS_TRACE();
 

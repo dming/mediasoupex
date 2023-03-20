@@ -91,7 +91,7 @@ public:
 	  const uint8_t* data2,
 	  size_t len2,
 	  TcpConnectionHandler::onSendCallback* cb);
-	void Write(std::vector<WriteData>&& datas, TcpConnectionHandler::onSendCallback* cb);
+	void Write(std::vector<WriteData>& datas, TcpConnectionHandler::onSendCallback* cb);
 	void ErrorReceiving();
 	const struct sockaddr* GetLocalAddress() const
 	{
