@@ -265,8 +265,7 @@ namespace RTMP
 				 */
 				size_t dataLen = this->bufferDataLen - this->frameStart;
 				if (dataLen == 0)
-					return;
-				// size_t packetLen;
+					return AfterUserRead("no more free message space");
 
 				RtmpCommonMessage* msg = nullptr;
 				if (RecvInterlacedMessage(&msg) != srs_success)
@@ -276,7 +275,7 @@ namespace RTMP
 					{
 						MS_DEBUG_DEV_STD("recv interlaced message");
 					}
-					return AfterReadBuffer("recv interlaced message");
+					return AfterUserRead("recv interlaced message");
 				}
 
 				if (!msg)
@@ -311,7 +310,7 @@ namespace RTMP
 					continue;
 				}
 
-				return AfterReadBuffer("recv entire message");
+				return AfterUserRead("recv entire message");
 			}
 		}
 	}
@@ -333,7 +332,7 @@ namespace RTMP
 		std::memcpy(data, packet, dataSize);
 
 		this->frameStart += dataSize;
-		AfterReadBuffer("ReadFully");
+		AfterUserRead("ReadFully");
 
 		return 0;
 	}
@@ -941,7 +940,7 @@ namespace RTMP
 		return err;
 	}
 
-	void RtmpTcpConnection::AfterReadBuffer(std::string log)
+	void RtmpTcpConnection::AfterUserRead(std::string log)
 	{
 		// Check if the buffer is full.
 		if (this->bufferDataLen == this->bufferSize)
@@ -955,7 +954,7 @@ namespace RTMP
 				this->bufferDataLen = this->bufferSize - this->frameStart;
 				this->frameStart    = 0;
 
-				if (!b_showDebugLog)
+				if (b_showDebugLog)
 				{
 					MS_DEBUG_DEV_STD(
 					  "no more space in the buffer, moving parsed bytes to the beginning of the buffer and wait for more data. bufferDataLen=%" PRIu64
@@ -969,7 +968,7 @@ namespace RTMP
 			// The frame is too big.
 			else
 			{
-				MS_WARN_DEV(
+				MS_WARN_DEV_STD(
 				  "no more space in the buffer for the unfinished frame being parsed, closing the "
 				  "connection.. log=%s",
 				  log.c_str());
