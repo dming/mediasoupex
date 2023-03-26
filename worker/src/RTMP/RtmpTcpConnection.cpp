@@ -255,12 +255,9 @@ namespace RTMP
 			/**
 			 * read rtmp tcp pecket;
 			 */
-			int nnn = 1000;
 			while (true) // true
 			{
-				nnn--;
-				// [dming] TODO: 一直读取rtmp packet 直到数据不足
-				if (nnn < 0 || IsClosed())
+				if (IsClosed())
 					return;
 
 				/**
@@ -279,7 +276,7 @@ namespace RTMP
 					{
 						MS_DEBUG_DEV_STD("recv interlaced message");
 					}
-					return;
+					return AfterReadBuffer("recv interlaced message");
 				}
 
 				if (!msg)
@@ -299,11 +296,22 @@ namespace RTMP
 						  msg->header.stream_id);
 					}
 					FREEP(msg);
+				}
+				else
+				{
+					RtmpAutoFree(RtmpCommonMessage, msg);
+					OnRecvMessage(msg);
+				}
+
+				// If there is more data in the buffer after the parsed frame then
+				// parse again. Otherwise break here and wait for more data.
+				if (this->bufferDataLen > this->frameStart)
+				{
+					// MS_DEBUG_DEV("there is more data after the parsed frame, continue parsing");
 					continue;
 				}
 
-				RtmpAutoFree(RtmpCommonMessage, msg);
-				OnRecvMessage(msg);
+				return AfterReadBuffer("recv entire message");
 			}
 		}
 	}
@@ -324,24 +332,8 @@ namespace RTMP
 		const uint8_t* packet = this->buffer + this->frameStart;
 		std::memcpy(data, packet, dataSize);
 
-		// If there is no more space available in the buffer and that is because
-		// the latest parsed frame filled it, then empty the full buffer.
-		if (this->frameStart + dataSize == this->bufferSize)
-		{
-			if (b_showDebugLog)
-			{
-				MS_DEBUG_DEV_STD("no more space in the buffer, emptying the buffer data");
-			}
-
-			this->frameStart    = 0;
-			this->bufferDataLen = 0;
-		}
-		// If there is still space in the buffer, set the beginning of the next
-		// frame to the next position after the parsed frame.
-		else
-		{
-			this->frameStart += dataSize;
-		}
+		this->frameStart += dataSize;
+		AfterReadBuffer("ReadFully");
 
 		return 0;
 	}
@@ -636,8 +628,7 @@ namespace RTMP
 			{
 				MS_ERROR_STD("cannot read %" PRId32 " bytes message header", bhLen + mhSize);
 			}
-			return srs_error_new(
-			  ERROR_RTMP_SOUP_ERROR, "cannot read %" PRId32 " bytes message header", bhLen + mhSize);
+			goto NOT_ENOUGH_DATA;
 		}
 
 		MessageHeader _header;
@@ -674,12 +665,12 @@ namespace RTMP
 					goto NOT_ENOUGH_DATA;
 				}
 			}
-			int32_t payloadLen = chunk->header.payload_length;
+			int32_t fullPayloadLength = chunk->header.payload_length;
 			if (fmt <= RTMP_FMT_TYPE1)
 			{
-				payloadLen = Utils::Byte::ReadUint24BE((char*)_header.payloadLength);
+				fullPayloadLength = Utils::Byte::ReadUint24BE((char*)_header.payloadLength);
 			}
-			int payloadSize = payloadLen - chunk->msg->size;
+			int payloadSize = fullPayloadLength - chunk->msg->size;
 			payloadSize     = std::min(payloadSize, in_chunk_size);
 			if (payloadSize > 0 && dataLen < bhLen + mhSize + payloadSize)
 			{
@@ -689,7 +680,7 @@ namespace RTMP
 					  "fmt=%d, cannot read %d bytes message header, and %d bytes payload size, only has %" PRIu64,
 					  fmt,
 					  bhLen + mhSize,
-					  payloadLen - chunk->msg->size,
+					  payloadSize,
 					  dataLen);
 				}
 				goto NOT_ENOUGH_DATA;
@@ -738,26 +729,24 @@ namespace RTMP
 
 			if (fmt <= RTMP_FMT_TYPE1)
 			{
-				int32_t payload_length = payloadLen;
-
 				// for a message, if msg exists in cache, the size must not changed.
 				// always use the actual msg size to compare, for the cache payload length can changed,
 				// for the fmt type1(stream_id not changed), user can change the payload
 				// length(it's not allowed in the continue chunks).
-				if (!is_first_chunk_of_msg && chunk->header.payload_length != payload_length)
+				if (!is_first_chunk_of_msg && chunk->header.payload_length != fullPayloadLength)
 				{
 					MS_ERROR_STD(
 					  "msg in chunk cache, size=%d cannot change to %d",
 					  chunk->header.payload_length,
-					  payload_length);
+					  fullPayloadLength);
 					return srs_error_new(
 					  ERROR_RTMP_PACKET_SIZE,
 					  "msg in chunk cache, size=%d cannot change to %d",
 					  chunk->header.payload_length,
-					  payload_length);
+					  fullPayloadLength);
 				}
 
-				chunk->header.payload_length = payload_length;
+				chunk->header.payload_length = fullPayloadLength;
 				chunk->header.message_type   = _header.messageType;
 
 				if (fmt == RTMP_FMT_TYPE0)
@@ -768,9 +757,8 @@ namespace RTMP
 		}
 		else
 		{
-			int32_t payloadLen = chunk->header.payload_length;
-			int payloadSize    = payloadLen - chunk->msg->size;
-			payloadSize        = std::min(payloadSize, in_chunk_size);
+			int payloadSize = chunk->header.payload_length - chunk->msg->size;
+			payloadSize     = std::min(payloadSize, in_chunk_size);
 			if (payloadSize > 0 && dataLen < (bhLen + mhSize + payloadSize))
 			{
 				if (b_showDebugLog)
@@ -779,7 +767,7 @@ namespace RTMP
 					  "fmt=%d, cannot read %d bytes message header, and %d bytes payload size, only %" PRIu64,
 					  fmt,
 					  bhLen + mhSize,
-					  payloadLen - chunk->msg->size,
+					  chunk->header.payload_length - chunk->msg->size,
 					  dataLen);
 				}
 				goto NOT_ENOUGH_DATA;
@@ -883,48 +871,9 @@ namespace RTMP
 			chunk->msg = nullptr;
 		}
 
-		// Check if the buffer is full.
-		if (this->bufferDataLen == this->bufferSize)
+		if (b_showDebugLog)
 		{
-			// First case: the incomplete frame does not begin at position 0 of
-			// the buffer, so move the frame to the position 0.
-			if (this->frameStart != 0)
-			{
-				if (b_showDebugLog)
-				{
-					MS_DEBUG_DEV_STD(
-					  "no more space in the buffer, moving parsed bytes to the beginning of "
-					  "the buffer and wait for more data");
-				}
-
-				std::memmove(
-				  this->buffer, this->buffer + this->frameStart, this->bufferSize - this->frameStart);
-				this->bufferDataLen = this->bufferSize - this->frameStart;
-				this->frameStart    = 0;
-			}
-			// Second case: the incomplete frame begins at position 0 of the buffer.
-			// The frame is too big.
-			else
-			{
-				MS_WARN_DEV(
-				  "no more space in the buffer for the unfinished frame being parsed, closing the "
-				  "connection");
-
-				ErrorReceiving();
-
-				// And exit fast since we are supposed to be deallocated.
-				return srs_error_new(
-				  ERROR_RTMP_SOUP_ERROR,
-				  "no more space in the buffer for the unfinished frame being parsed, closing the connection");
-			}
-		}
-		// The buffer is not full.
-		else
-		{
-			if (b_showDebugLog)
-			{
-				MS_DEBUG_DEV_STD("frame not finished yet, waiting for more data");
-			}
+			MS_DEBUG_DEV_STD("frame not finished yet, waiting for more data");
 		}
 		return srs_error_new(ERROR_RTMP_SOUP_ERROR, "not enough data for message");
 	}
@@ -970,6 +919,7 @@ namespace RTMP
 		}
 		memcpy(chunk->msg->payload + chunk->msg->size, this->buffer + this->frameStart, payload_size);
 		chunk->msg->size += payload_size;
+
 		if (b_showDebugLog)
 		{
 			MS_DEBUG_DEV_STD(
@@ -978,16 +928,7 @@ namespace RTMP
 			  chunk->header.payload_length);
 		}
 
-		if (this->frameStart + payload_size == this->bufferSize)
-		{
-			MS_DEBUG_DEV_STD("no more space in the buffer, emptying the buffer data");
-			this->frameStart    = 0;
-			this->bufferDataLen = 0;
-		}
-		else
-		{
-			this->frameStart += payload_size;
-		}
+		this->frameStart += payload_size;
 
 		// got entire RTMP message?
 		if (chunk->header.payload_length == chunk->msg->size)
@@ -998,6 +939,48 @@ namespace RTMP
 		}
 
 		return err;
+	}
+
+	void RtmpTcpConnection::AfterReadBuffer(std::string log)
+	{
+		// Check if the buffer is full.
+		if (this->bufferDataLen == this->bufferSize)
+		{
+			// First case: the incomplete frame does not begin at position 0 of
+			// the buffer, so move the frame to the position 0.
+			if (this->frameStart != 0)
+			{
+				std::memmove(
+				  this->buffer, this->buffer + this->frameStart, this->bufferSize - this->frameStart);
+				this->bufferDataLen = this->bufferSize - this->frameStart;
+				this->frameStart    = 0;
+
+				if (!b_showDebugLog)
+				{
+					MS_DEBUG_DEV_STD(
+					  "no more space in the buffer, moving parsed bytes to the beginning of the buffer and wait for more data. bufferDataLen=%" PRIu64
+					  ", remainSize=%" PRIu64 ", log=%s",
+					  this->bufferDataLen,
+					  this->bufferSize - this->bufferDataLen,
+					  log.c_str());
+				}
+			}
+			// Second case: the incomplete frame begins at position 0 of the buffer.
+			// The frame is too big.
+			else
+			{
+				MS_WARN_DEV(
+				  "no more space in the buffer for the unfinished frame being parsed, closing the "
+				  "connection.. log=%s",
+				  log.c_str());
+
+				ErrorReceiving();
+
+				// And exit fast since we are supposed to be deallocated.
+				return;
+			}
+		}
+		// The buffer is not full.
 	}
 
 	srs_error_t RtmpTcpConnection::send_and_free_packet(RtmpPacket* packet, int stream_id)
@@ -1024,7 +1007,6 @@ namespace RTMP
 
 		srs_assert(packet);
 		RtmpAutoFree(RtmpPacket, packet);
-		// std::unique_ptr<RtmpPacket> _auto_free_packet(packet);
 		RtmpCommonMessage* msg = new RtmpCommonMessage();
 		RtmpAutoFree(RtmpCommonMessage, msg);
 

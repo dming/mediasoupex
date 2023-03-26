@@ -154,7 +154,7 @@ namespace RTMP
 	}
 	RtmpChunkStream::~RtmpChunkStream()
 	{
-		FREEPA(msg);
+		FREEP(msg);
 	}
 
 	RtmpSharedMessageHeader::RtmpSharedMessageHeader()

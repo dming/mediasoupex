@@ -54,6 +54,7 @@ namespace RTMP
 		virtual srs_error_t ReadBasicHeader(char& fmt, int& cid, int& bhLen);
 		virtual srs_error_t ReadMessageHeader(RtmpChunkStream* chunk, char fmt, int bhLen);
 		virtual srs_error_t ReadMessagePayload(RtmpChunkStream* chunk, RtmpCommonMessage** pmsg);
+		virtual void AfterReadBuffer(std::string log);
 		// Recv complete message
 		virtual void OnRecvMessage(RtmpCommonMessage* msg);
 		// Auto response the ping message.

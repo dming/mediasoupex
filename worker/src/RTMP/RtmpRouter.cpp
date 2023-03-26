@@ -500,7 +500,7 @@ namespace RTMP
 		// clear gop cache when got key frame
 		if (msg->is_video() && RtmpFlvVideo::keyframe(msg->payload, msg->size))
 		{
-			MS_DEBUG_DEV_STD("Gop cache keyframe and clear before size=%" PRIu64, gop_cache.size());
+			// MS_DEBUG_DEV_STD("Gop cache keyframe and clear before size=%" PRIu64, gop_cache.size());
 			clear();
 
 			// curent msg is video frame, so we set to 1.
@@ -527,7 +527,7 @@ namespace RTMP
 
 	void RtmpGopCache::clear()
 	{
-		MS_DEBUG_DEV_STD("RtmpGopCache::clear");
+		// MS_DEBUG_DEV_STD("RtmpGopCache::clear");
 		std::vector<RtmpSharedPtrMessage*>::iterator it;
 		for (it = gop_cache.begin(); it != gop_cache.end(); ++it)
 		{
