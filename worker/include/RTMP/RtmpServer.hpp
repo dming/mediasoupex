@@ -2,7 +2,7 @@
 #ifndef MS_RTMP_SERVER_HPP
 #define MS_RTMP_SERVER_HPP
 
-#include "RTMP/RtmpSession.hpp"
+#include "RTMP/RtmpServerSession.hpp"
 #include "RTMP/RtmpTcpServer.hpp"
 #include "RtmpRouter.hpp"
 #include "RTC/Shared.hpp"
@@ -18,7 +18,8 @@ namespace RTMP
 	 *
 	 */
 	class RtmpServer : public RTMP::RtmpTcpServer::Listener,
-	                   public Channel::ChannelSocket::RequestHandler
+	                   public Channel::ChannelSocket::RequestHandler,
+	                   public RtmpServerSession::ServerListener
 	{
 	public:
 		RtmpServer(RTC::Shared* shared, const std::string& id, json& data);
@@ -30,15 +31,18 @@ namespace RTMP
 
 		/* Pure virtual methods inherited from RTMP::RtmpTcpServer::Listener. */
 	public:
-		RtmpSession* CreateNewSession() override;
+		RtmpServerSession* CreateNewServerSession() override;
 		void OnRtcTcpConnectionClosed(
 		  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTcpConnection* connection) override;
-		void OnRtmpSessionCreated(RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpSession* session) override;
+		void OnRtmpServerSessionCreated(
+		  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpServerSession* session) override;
 
 	public:
 		RtmpRouter* FetchRouter(RtmpRequest* req);
 		RtmpRouter* FetchRouter(std::string streamUrl);
-		srs_error_t FetchOrCreateRouter(RtmpRequest* req, RtmpRouter** pps);
+
+		/* Pure virtual methods inherited from RtmpServerSession::ServerListener. */
+		srs_error_t FetchOrCreateRouter(RtmpRequest* req, RtmpRouter** pps) override;
 
 	public:
 		// Passed by argument.
@@ -48,7 +52,7 @@ namespace RTMP
 		// Passed by argument.
 		RTC::Shared* shared{ nullptr };
 		RTMP::RtmpTcpServer* tcpServer;
-		std::map<uint64_t, RTMP::RtmpSession*> sessions_;
+		std::map<uint64_t, RTMP::RtmpServerSession*> sessions_;
 		std::map<std::string, RTMP::RtmpRouter*> routers_;
 	};
 } // namespace RTMP

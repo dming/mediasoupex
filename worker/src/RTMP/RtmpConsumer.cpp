@@ -8,8 +8,8 @@
 namespace RTMP
 {
 
-	RtmpConsumer::RtmpConsumer(RtmpRouter* router, RtmpSession* session)
-	  : RTMP::RtmpTransport::RtmpTransport(router, session), jitter_(new RtmpRtmpJitter())
+	RtmpConsumer::RtmpConsumer(RtmpConsumer::Listener* listener)
+	  : listener_(listener), jitter_(new RtmpRtmpJitter())
 	{
 	}
 
@@ -17,10 +17,11 @@ namespace RTMP
 	{
 		MS_DEBUG_DEV_STD("~RtmpConsumer");
 		FREEP(jitter_);
+		listener_ = nullptr;
 	}
 
 	// see RtmpRtmpConn::process_play_control_msg
-	srs_error_t RtmpConsumer::OnRecvMessage(RTC::TransportTuple* tuple, RtmpCommonMessage* msg)
+	srs_error_t RtmpConsumer::RecvMessage(RTC::TransportTuple* tuple, RtmpCommonMessage* msg)
 	{
 		MS_DEBUG_DEV_STD("recv msg type is %d", msg->header.message_type);
 
@@ -32,7 +33,7 @@ namespace RTMP
 		}
 
 		RtmpPacket* pkt = NULL;
-		if ((err = session_->decode_message(msg, &pkt)) != srs_success)
+		if ((err = listener_->OnDecodeMessage(msg, &pkt)) != srs_success)
 		{
 			return srs_error_wrap(err, "rtmp: decode message");
 		}
@@ -44,7 +45,7 @@ namespace RTMP
 		{
 			MS_DEBUG_DEV("RtmpCloseStreamPacket command_name=%s", close->command_name.c_str());
 			// [dming] todo: 从router里删除
-			// router_->RemoveSession(session_); // 晚点再实现，这个恐怕会双重删除session
+			// 晚点再实现，应该只需要关闭session即可。可以通知Listener，即Transport去处理
 			return srs_error_new(ERROR_CONTROL_RTMP_CLOSE, "rtmp: close stream");
 		}
 
@@ -61,7 +62,7 @@ namespace RTMP
 				RtmpCallResPacket* res = new RtmpCallResPacket(call->transaction_id);
 				res->command_object    = RtmpAmf0Any::null();
 				res->response          = RtmpAmf0Any::null();
-				if ((err = session_->GetConnection()->send_and_free_packet(res, 0)) != srs_success)
+				if ((err = listener_->OnSendAndFreePacket(res, 0)) != srs_success)
 				{
 					return srs_error_wrap(err, "rtmp: send packets");
 				}
@@ -73,10 +74,6 @@ namespace RTMP
 		RtmpPausePacket* pause = dynamic_cast<RtmpPausePacket*>(pkt);
 		if (pause)
 		{
-			if ((err = session_->on_play_client_pause(session_->GetInfo()->res->stream_id, pause->is_pause)) != srs_success)
-			{
-				return srs_error_wrap(err, "rtmp: pause");
-			}
 			if ((err = on_play_client_pause(pause->is_pause)) != srs_success)
 			{
 				return srs_error_wrap(err, "rtmp: pause");
@@ -102,7 +99,7 @@ namespace RTMP
 			}
 		}
 
-		return send_and_free_message(msg, GetSession()->GetStreamId());
+		return this->listener_->OnSendAndFreeMessage(msg, listener_->GetInfo()->res->stream_id);
 	}
 
 	int64_t RtmpConsumer::get_time()
@@ -113,8 +110,70 @@ namespace RTMP
 	srs_error_t RtmpConsumer::on_play_client_pause(bool is_pause)
 	{
 		srs_error_t err = srs_success;
-
 		MS_DEBUG_DEV("stream consumer change pause state %d=>%d", b_paused_, is_pause);
+
+		int stream_id = listener_->GetInfo()->res->stream_id;
+		if (is_pause)
+		{
+			// onStatus(NetStream.Pause.Notify)
+			if (true)
+			{
+				RtmpOnStatusCallPacket* pkt = new RtmpOnStatusCallPacket();
+
+				pkt->data->set(StatusLevel, RtmpAmf0Any::str(StatusLevelStatus));
+				pkt->data->set(StatusCode, RtmpAmf0Any::str(StatusCodeStreamPause));
+				pkt->data->set(StatusDescription, RtmpAmf0Any::str("Paused stream."));
+
+				if ((err = listener_->OnSendAndFreePacket(pkt, stream_id)) != srs_success)
+				{
+					return srs_error_wrap(err, "send NetStream.Pause.Notify");
+				}
+			}
+			// StreamEOF
+			if (true)
+			{
+				RtmpUserControlPacket* pkt = new RtmpUserControlPacket();
+
+				pkt->event_type = SrcPCUCStreamEOF;
+				pkt->event_data = stream_id;
+
+				if ((err = listener_->OnSendAndFreePacket(pkt, 0)) != srs_success)
+				{
+					return srs_error_wrap(err, "send StreamEOF");
+				}
+			}
+		}
+		else
+		{
+			// onStatus(NetStream.Unpause.Notify)
+			if (true)
+			{
+				RtmpOnStatusCallPacket* pkt = new RtmpOnStatusCallPacket();
+
+				pkt->data->set(StatusLevel, RtmpAmf0Any::str(StatusLevelStatus));
+				pkt->data->set(StatusCode, RtmpAmf0Any::str(StatusCodeStreamUnpause));
+				pkt->data->set(StatusDescription, RtmpAmf0Any::str("Unpaused stream."));
+
+				if ((err = listener_->OnSendAndFreePacket(pkt, stream_id)) != srs_success)
+				{
+					return srs_error_wrap(err, "send NetStream.Unpause.Notify");
+				}
+			}
+			// StreamBegin
+			if (true)
+			{
+				RtmpUserControlPacket* pkt = new RtmpUserControlPacket();
+
+				pkt->event_type = SrcPCUCStreamBegin;
+				pkt->event_data = stream_id;
+
+				if ((err = listener_->OnSendAndFreePacket(pkt, 0)) != srs_success)
+				{
+					return srs_error_wrap(err, "send StreamBegin");
+				}
+			}
+		}
+
 		b_paused_ = is_pause;
 
 		return err;

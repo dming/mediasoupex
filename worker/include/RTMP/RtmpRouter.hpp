@@ -4,8 +4,11 @@
 #include "CplxError.hpp"
 #include "RTMP/RtmpCodec.hpp"
 #include "RTMP/RtmpFormat.hpp"
+#include "RTMP/RtmpInfo.hpp"
 #include "RTMP/RtmpKernel.hpp"
 #include "RTMP/RtmpMessage.hpp"
+#include "RTMP/RtmpServerTransport.hpp"
+#include <list>
 #include <map>
 #include <stdint.h>
 #include <unordered_map>
@@ -13,42 +16,6 @@
 
 namespace RTMP
 {
-	class RtmpSession;
-	class RtmpRequest;
-	class RtmpConsumer;
-	class RtmpPublisher;
-
-	// The time jitter algorithm:
-	// 1. full, to ensure stream start at zero, and ensure stream monotonically increasing.
-	// 2. zero, only ensure sttream start at zero, ignore timestamp jitter.
-	// 3. off, disable the time jitter algorithm, like atc.
-	enum RtmpRtmpJitterAlgorithm
-	{
-		RtmpRtmpJitterAlgorithmFULL = 0x01,
-		RtmpRtmpJitterAlgorithmZERO,
-		RtmpRtmpJitterAlgorithmOFF
-	};
-	int srs_time_jitter_string2int(std::string time_jitter);
-
-	// Time jitter detect and correct, to ensure the rtmp stream is monotonically.
-	class RtmpRtmpJitter
-	{
-	private:
-		int64_t last_pkt_time;
-		int64_t last_pkt_correct_time;
-
-	public:
-		RtmpRtmpJitter();
-		virtual ~RtmpRtmpJitter();
-
-	public:
-		// detect the time jitter and correct it.
-		// @param ag the algorithm to use for time jitter.
-		virtual srs_error_t correct(RtmpSharedPtrMessage* msg, RtmpRtmpJitterAlgorithm ag);
-		// Get current client time, the last packet time.
-		virtual int64_t get_time();
-	};
-
 	// The mix queue to correct the timestamp for mix_correct algorithm.
 	class RtmpMixQueue
 	{
@@ -188,15 +155,16 @@ namespace RTMP
 		virtual bool pure_audio();
 	};
 
-	class RtmpRouter
+	class RtmpRouter : public RtmpTransport::Listener
 	{
 	public:
 		RtmpRouter(/* args */);
 		~RtmpRouter();
 
 		srs_error_t initualize(RtmpRequest* req);
-		srs_error_t CreatePublisher(RtmpSession* session, RtmpPublisher** publisher);
-		srs_error_t RemoveSession(RtmpSession* session);
+		srs_error_t CreateServerTransport(
+		  RtmpServerSession* session, bool isPublisher, RtmpServerTransport** transport);
+		srs_error_t RemoveServerSession(RtmpServerSession* session);
 
 	private:
 		// The time jitter algorithm for vhost.
@@ -222,22 +190,24 @@ namespace RTMP
 		RtmpRtmpFormat* format_;
 
 	public:
-		srs_error_t CreateConsumer(RtmpSession* session, RtmpConsumer*& consumer);
 		srs_error_t ConsumerDump(RtmpConsumer* consumer);
 
-		virtual srs_error_t on_meta_data(RtmpCommonMessage* msg, RtmpOnMetaDataPacket* metadata);
-
-		srs_error_t OnAudio(RtmpCommonMessage* shared_audio);
-		srs_error_t OnVideo(RtmpCommonMessage* shared_video);
-		srs_error_t OnAggregate(RtmpCommonMessage* shared_video);
+		/* Pure virtual methods inherited from RtmpTransport::Listener. */
+		bool IsPublishing() override;
+		srs_error_t OnMetaData(RtmpCommonMessage* msg, RtmpOnMetaDataPacket* metadata) override;
+		srs_error_t OnAudio(RtmpCommonMessage* shared_audio) override;
+		srs_error_t OnVideo(RtmpCommonMessage* shared_video) override;
+		srs_error_t OnAggregate(RtmpCommonMessage* shared_video) override;
 
 	private:
+		srs_error_t OnCreateServerPublisher(RtmpPublisher* publisher);
 		srs_error_t on_audio_imp(RtmpSharedPtrMessage* msg);
 		srs_error_t on_video_imp(RtmpSharedPtrMessage* msg);
 
 	private:
 		RtmpRequest* req_;
 		RtmpPublisher* publisher_;
+		std::list<RtmpTransport*> transports_;
 		std::unordered_map<uint64_t, RtmpConsumer*> consumers_;
 	};
 

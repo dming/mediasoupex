@@ -1,50 +1,45 @@
-#define MS_CLASS "RTMP::RtmpSession"
+#define MS_CLASS "RTMP::RtmpServerSession"
 #define MS_LOG_DEV_LEVEL 3
 
-#include "RTMP/RtmpSession.hpp"
+#include "RTMP/RtmpServerSession.hpp"
 #include "CplxError.hpp"
 #include "Logger.hpp"
 #include "RTMP/RtmpConsumer.hpp"
 #include "RTMP/RtmpHttp.hpp"
 #include "RTMP/RtmpPublisher.hpp"
 #include "RTMP/RtmpRouter.hpp"
-#include "RTMP/RtmpServer.hpp"
 #include "RTMP/RtmpTransport.hpp"
-
-// FMLE
-#define RTMP_AMF0_COMMAND_ON_FC_PUBLISH "onFCPublish"
-#define RTMP_AMF0_COMMAND_ON_FC_UNPUBLISH "onFCUnpublish"
 
 namespace RTMP
 {
-	RtmpSession::RtmpSession(RtmpServer* rtmpServer)
-	  : rtmpServer_(rtmpServer), connection_(new RTMP::RtmpTcpConnection(this, 65535)),
-	    info_(new RtmpClientInfo()), transport_(nullptr)
+	RtmpServerSession::RtmpServerSession(ServerListener* serverListener)
+	  : serverListener_(serverListener), connection_(new RTMP::RtmpTcpConnection(this, 65535)),
+	    info_(new RtmpClientInfo()), listener_(nullptr)
 	{
 		MS_TRACE();
 	}
 
-	RtmpSession::~RtmpSession()
+	RtmpServerSession::~RtmpServerSession()
 	{
 		MS_TRACE();
-		MS_DEBUG_DEV_STD("~RtmpSession");
+		MS_DEBUG_DEV_STD("~RtmpServerSession");
 
 		// NOTE: connection will be free in TcpServerHandler::OnTcpConnectionClosed
 		FREEP(info_);
-		connection_ = nullptr;
-		rtmpServer_ = nullptr;
-		transport_  = nullptr;
+		connection_     = nullptr;
+		serverListener_ = nullptr;
+		listener_       = nullptr;
 	}
 
-	void RtmpSession::OnTcpConnectionPacketReceived(
+	void RtmpServerSession::OnTcpConnectionPacketReceived(
 	  RTMP::RtmpTcpConnection* connection, RtmpCommonMessage* msg)
 	{
 		MS_TRACE();
 		// std::lock_guard<std::mutex> lock(messageMutex);
 		RTC::TransportTuple tuple(connection);
-		if (transport_)
+		if (listener_)
 		{
-			transport_->RecvMessage(&tuple, msg);
+			listener_->RecvMessage(&tuple, msg);
 		}
 		else
 		{
@@ -52,7 +47,7 @@ namespace RTMP
 		}
 	}
 
-	srs_error_t RtmpSession::OnRecvMessage(RTC::TransportTuple* tuple, RtmpCommonMessage* msg)
+	srs_error_t RtmpServerSession::OnRecvMessage(RTC::TransportTuple* tuple, RtmpCommonMessage* msg)
 	{
 		MS_TRACE();
 
@@ -136,7 +131,7 @@ namespace RTMP
 		return err;
 	}
 
-	srs_error_t RtmpSession::HandleRtmpConnectAppPacket(RtmpConnectAppPacket* packet)
+	srs_error_t RtmpServerSession::HandleRtmpConnectAppPacket(RtmpConnectAppPacket* packet)
 	{
 		MS_TRACE();
 		srs_error_t err = srs_success;
@@ -194,7 +189,7 @@ namespace RTMP
 		return srs_success;
 	}
 
-	srs_error_t RtmpSession::response_connect_app(RtmpRequest* req, const char* server_ip)
+	srs_error_t RtmpServerSession::response_connect_app(RtmpRequest* req, const char* server_ip)
 	{
 		srs_error_t err = srs_success;
 
@@ -236,7 +231,7 @@ namespace RTMP
 		return err;
 	}
 
-	srs_error_t RtmpSession::HandleRtmpFMLEStartPacket(RtmpFMLEStartPacket* packet)
+	srs_error_t RtmpServerSession::HandleRtmpFMLEStartPacket(RtmpFMLEStartPacket* packet)
 	{
 		srs_error_t err = srs_success;
 
@@ -260,7 +255,7 @@ namespace RTMP
 		return err;
 	}
 
-	srs_error_t RtmpSession::HandleRtmpCreateStreamPacket(RtmpCreateStreamPacket* packet)
+	srs_error_t RtmpServerSession::HandleRtmpCreateStreamPacket(RtmpCreateStreamPacket* packet)
 	{
 		srs_error_t err = srs_success;
 		MS_DEBUG_DEV_STD("HandleRtmpCreateStreamPacket transaction_id=%f", packet->transaction_id);
@@ -276,7 +271,7 @@ namespace RTMP
 		return err;
 	}
 
-	srs_error_t RtmpSession::HandleRtmpPublishPacket(RtmpPublishPacket* packet)
+	srs_error_t RtmpServerSession::HandleRtmpPublishPacket(RtmpPublishPacket* packet)
 	{
 		srs_error_t err = srs_success;
 
@@ -313,15 +308,15 @@ namespace RTMP
 		connection_->b_showDebugLog = false;
 
 		// [dming] 到这里就完成publish的前期工作，进入直播流音视频和数据推送
-		RtmpRouter* router       = nullptr;
-		RtmpPublisher* publisher = nullptr;
-		if ((err = rtmpServer_->FetchOrCreateRouter(info_->req, &router)) != srs_success)
+		RtmpRouter* router             = nullptr;
+		RtmpServerTransport* transport = nullptr;
+		if ((err = serverListener_->FetchOrCreateRouter(info_->req, &router)) != srs_success)
 		{
 			MS_ERROR_STD("HandleRtmpPublishPacket cannot FetchOrCreateRouter, close the connection");
 			connection_->Close();
 			return srs_error_wrap(err, "rtmp: fetch router");
 		}
-		if ((err = router->CreatePublisher(this, &publisher)) != srs_success)
+		if ((err = router->CreateServerTransport(this, true, &transport)) != srs_success)
 		{
 			MS_ERROR_STD("HandleRtmpPublishPacket cannot creare publisher, close the connection");
 			connection_->Close();
@@ -329,14 +324,15 @@ namespace RTMP
 		}
 
 		MS_DEBUG_DEV_STD(
-		  "HandleRtmpPublishPacket succeed CreatePublisher: %s", info_->req->get_stream_url().c_str());
+		  "HandleRtmpPublishPacket succeed CreateServerPublisher: %s",
+		  info_->req->get_stream_url().c_str());
 
-		transport_ = publisher;
+		listener_ = transport;
 
 		return err;
 	}
 
-	srs_error_t RtmpSession::HandleRtmpPlayPacket(RtmpPlayPacket* packet)
+	srs_error_t RtmpServerSession::HandleRtmpPlayPacket(RtmpPlayPacket* packet)
 	{
 		srs_error_t err      = srs_success;
 		info_->type          = RtmpRtmpConnPlay;
@@ -420,139 +416,23 @@ namespace RTMP
 		connection_->b_showDebugLog = false;
 
 		// [dming] 到这里就完成play的前期工作，进入直播流音视频和数据接收
-		RtmpRouter* router     = nullptr;
-		RtmpConsumer* consumer = nullptr;
-		if ((err = rtmpServer_->FetchOrCreateRouter(info_->req, &router)) != srs_success)
+		RtmpRouter* router             = nullptr;
+		RtmpServerTransport* transport = nullptr;
+		if ((err = serverListener_->FetchOrCreateRouter(info_->req, &router)) != srs_success)
 		{
 			MS_ERROR_STD("HandleRtmpPlayPacket cannot FetchOrCreateRouter, close the connection");
 			connection_->Close();
 			return srs_error_wrap(err, "rtmp: fetch router");
 		}
-		if ((err = router->CreateConsumer(this, consumer)) != srs_success)
+		if ((err = router->CreateServerTransport(this, false, &transport)) != srs_success)
 		{
 			MS_ERROR_STD("HandleRtmpPlayPacket cannot creare consumer, close the connection");
 			connection_->Close();
 			return srs_error_wrap(err, "rtmp: create consumer");
 		}
-		router->ConsumerDump(consumer);
-		transport_ = consumer;
+		router->ConsumerDump(transport->GetConsumer());
+		listener_ = transport;
 		return srs_success;
 	}
 
-	srs_error_t RtmpSession::on_play_client_pause(int stream_id, bool is_pause)
-	{
-		srs_error_t err = srs_success;
-
-		if (is_pause)
-		{
-			// onStatus(NetStream.Pause.Notify)
-			if (true)
-			{
-				RtmpOnStatusCallPacket* pkt = new RtmpOnStatusCallPacket();
-
-				pkt->data->set(StatusLevel, RtmpAmf0Any::str(StatusLevelStatus));
-				pkt->data->set(StatusCode, RtmpAmf0Any::str(StatusCodeStreamPause));
-				pkt->data->set(StatusDescription, RtmpAmf0Any::str("Paused stream."));
-
-				if ((err = connection_->send_and_free_packet(pkt, stream_id)) != srs_success)
-				{
-					return srs_error_wrap(err, "send NetStream.Pause.Notify");
-				}
-			}
-			// StreamEOF
-			if (true)
-			{
-				RtmpUserControlPacket* pkt = new RtmpUserControlPacket();
-
-				pkt->event_type = SrcPCUCStreamEOF;
-				pkt->event_data = stream_id;
-
-				if ((err = connection_->send_and_free_packet(pkt, 0)) != srs_success)
-				{
-					return srs_error_wrap(err, "send StreamEOF");
-				}
-			}
-		}
-		else
-		{
-			// onStatus(NetStream.Unpause.Notify)
-			if (true)
-			{
-				RtmpOnStatusCallPacket* pkt = new RtmpOnStatusCallPacket();
-
-				pkt->data->set(StatusLevel, RtmpAmf0Any::str(StatusLevelStatus));
-				pkt->data->set(StatusCode, RtmpAmf0Any::str(StatusCodeStreamUnpause));
-				pkt->data->set(StatusDescription, RtmpAmf0Any::str("Unpaused stream."));
-
-				if ((err = connection_->send_and_free_packet(pkt, stream_id)) != srs_success)
-				{
-					return srs_error_wrap(err, "send NetStream.Unpause.Notify");
-				}
-			}
-			// StreamBegin
-			if (true)
-			{
-				RtmpUserControlPacket* pkt = new RtmpUserControlPacket();
-
-				pkt->event_type = SrcPCUCStreamBegin;
-				pkt->event_data = stream_id;
-
-				if ((err = connection_->send_and_free_packet(pkt, 0)) != srs_success)
-				{
-					return srs_error_wrap(err, "send StreamBegin");
-				}
-			}
-		}
-
-		return err;
-	}
-
-	srs_error_t RtmpSession::fmle_unpublish(int stream_id, double unpublish_tid)
-	{
-		srs_error_t err = srs_success;
-		MS_DEBUG_DEV_STD("fmle_unpublish stream_id=%d, unpublish_tid=%f", stream_id, unpublish_tid);
-		// publish response onFCUnpublish(NetStream.unpublish.Success)
-		if (true)
-		{
-			RtmpOnStatusCallPacket* pkt = new RtmpOnStatusCallPacket();
-
-			pkt->command_name = RTMP_AMF0_COMMAND_ON_FC_UNPUBLISH;
-			pkt->data->set(StatusCode, RtmpAmf0Any::str(StatusCodeUnpublishSuccess));
-			pkt->data->set(StatusDescription, RtmpAmf0Any::str("Stop publishing stream."));
-
-			if ((err = connection_->send_and_free_packet(pkt, stream_id)) != srs_success)
-			{
-				return srs_error_wrap(err, "send NetStream.unpublish.Success");
-			}
-			MS_DEBUG_DEV_STD("send NetStream.unpublish.Success");
-		}
-		// FCUnpublish response
-		if (true)
-		{
-			RtmpFMLEStartResPacket* pkt = new RtmpFMLEStartResPacket(unpublish_tid);
-			if ((err = connection_->send_and_free_packet(pkt, stream_id)) != srs_success)
-			{
-				return srs_error_wrap(err, "send FCUnpublish response");
-			}
-			MS_DEBUG_DEV_STD("send FCUnpublish response");
-		}
-		// publish response onStatus(NetStream.Unpublish.Success)
-		if (true)
-		{
-			RtmpOnStatusCallPacket* pkt = new RtmpOnStatusCallPacket();
-
-			pkt->data->set(StatusLevel, RtmpAmf0Any::str(StatusLevelStatus));
-			pkt->data->set(StatusCode, RtmpAmf0Any::str(StatusCodeUnpublishSuccess));
-			pkt->data->set(StatusDescription, RtmpAmf0Any::str("Stream is now unpublished"));
-			pkt->data->set(StatusClientId, RtmpAmf0Any::str(RTMP_SIG_CLIENT_ID));
-
-			if ((err = connection_->send_and_free_packet(pkt, stream_id)) != srs_success)
-			{
-				return srs_error_wrap(err, "send NetStream.Unpublish.Success");
-			}
-			MS_DEBUG_DEV_STD("send NetStream.Unpublish.Success");
-		}
-
-		return err;
-	}
 } // namespace RTMP

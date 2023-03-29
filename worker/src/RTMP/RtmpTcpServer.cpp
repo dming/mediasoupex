@@ -3,7 +3,7 @@
 
 #include "RTMP/RtmpTcpServer.hpp"
 #include "Logger.hpp"
-#include "RTMP/RtmpSession.hpp"
+#include "RTMP/RtmpServerSession.hpp"
 #include "RTC/PortManager.hpp"
 
 namespace RTMP
@@ -38,7 +38,7 @@ namespace RTMP
 		MS_DEBUG_DEV_STD("UserOnTcpConnectionAlloc ");
 
 		// Allocate a new RTMP::RtmpTcpConnection for the RtmpTcpServer to handle it.
-		RTMP::RtmpSession* session = this->listener->CreateNewSession();
+		RTMP::RtmpServerSession* session = this->listener->CreateNewServerSession();
 
 		RTMP::RtmpTcpConnection* connection = session->GetConnection();
 		// Accept it.
@@ -49,7 +49,7 @@ namespace RTMP
 		// close的时候，调用其析构函数
 		if (this->connections.find(connection) != this->connections.end())
 		{
-			this->listener->OnRtmpSessionCreated(this, session);
+			this->listener->OnRtmpServerSessionCreated(this, session);
 		}
 		else
 		{

@@ -9,8 +9,7 @@
 namespace RTMP
 {
 
-	RtmpPublisher::RtmpPublisher(RtmpRouter* router, RtmpSession* session)
-	  : RTMP::RtmpTransport::RtmpTransport(router, session)
+	RtmpPublisher::RtmpPublisher(Listener* listener) : listener_(listener)
 	{
 		MS_TRACE();
 		MS_DEBUG_DEV_STD("RtmpPublisher constructor..");
@@ -23,7 +22,7 @@ namespace RTMP
 	}
 
 	// as srs  RtmpRtmpConn::handle_publish_message
-	srs_error_t RtmpPublisher::OnRecvMessage(RTC::TransportTuple* /* tuple */, RtmpCommonMessage* msg)
+	srs_error_t RtmpPublisher::RecvMessage(RTC::TransportTuple* /* tuple */, RtmpCommonMessage* msg)
 	{
 		srs_error_t err          = srs_success;
 		static size_t VAMsgCount = 0;
@@ -45,14 +44,14 @@ namespace RTMP
 		{
 			MS_DEBUG_DEV_STD("====>Publisher OnRecvMessage is_amf0_command ||  is_amf3_command ");
 			RTMP::RtmpPacket* packet;
-			if ((err = session_->decode_message(msg, &packet)) != srs_success)
+			if ((err = listener_->OnDecodeMessage(msg, &packet)) != srs_success)
 			{
 				return srs_error_wrap(err, "decode message");
 			}
 			RtmpAutoFree(RtmpPacket, packet);
 
 			// for flash, any packet is republish.
-			if (session_->GetInfo()->type == RtmpRtmpConnFlashPublish)
+			if (listener_->GetInfo()->type == RtmpRtmpConnFlashPublish)
 			{
 				// flash unpublish.
 				// TODO: maybe need to support republish.
@@ -63,9 +62,9 @@ namespace RTMP
 			// for fmle, drop others except the fmle start packet.
 			if (dynamic_cast<RtmpFMLEStartPacket*>(packet))
 			{
-				MS_DEBUG_DEV("Publisher RtmpFMLEStartPacket fmle_unpublish");
+				MS_DEBUG_DEV("Publisher RtmpFMLEStartPacket FMLEUnpublish");
 				RtmpFMLEStartPacket* unpublish = dynamic_cast<RtmpFMLEStartPacket*>(packet);
-				if ((err = session_->fmle_unpublish(session_->GetInfo()->res->stream_id, unpublish->transaction_id)) != srs_success)
+				if ((err = FMLEUnpublish(listener_->GetInfo()->res->stream_id, unpublish->transaction_id)) != srs_success)
 				{
 					return srs_error_wrap(err, "rtmp: republish");
 				}
@@ -78,21 +77,21 @@ namespace RTMP
 		}
 		else if (msg->header.is_audio())
 		{
-			router_->OnAudio(msg);
+			listener_->OnPublisherAudio(msg);
 		}
 		else if (msg->header.is_video())
 		{
-			router_->OnVideo(msg);
+			listener_->OnPublisherVideo(msg);
 		}
 		else if (msg->header.is_aggregate())
 		{
-			router_->OnAggregate(msg);
+			listener_->OnPublisherAggregate(msg);
 		}
 		else if (msg->header.is_amf0_data() || msg->header.is_amf3_data())
 		{
 			MS_DEBUG_DEV_STD("====>Publisher OnRecvMessage is_amf0_data ||  is_amf3_data");
 			RTMP::RtmpPacket* packet;
-			if ((err = session_->decode_message(msg, &packet)) != srs_success)
+			if ((err = listener_->OnDecodeMessage(msg, &packet)) != srs_success)
 			{
 				return srs_error_wrap(err, "decode message");
 			}
@@ -100,13 +99,62 @@ namespace RTMP
 			if (dynamic_cast<RtmpOnMetaDataPacket*>(packet))
 			{
 				RtmpOnMetaDataPacket* metadata = dynamic_cast<RtmpOnMetaDataPacket*>(packet);
-				if ((err = router_->on_meta_data(msg, metadata)) != srs_success)
+				if ((err = listener_->OnPublisherMetaData(msg, metadata)) != srs_success)
 				{
 					return srs_error_wrap(err, "source consume metadata");
 				}
 				return err;
 			}
 		}
+		return err;
+	}
+
+	srs_error_t RtmpPublisher::FMLEUnpublish(int stream_id, double unpublish_tid)
+	{
+		srs_error_t err = srs_success;
+		MS_DEBUG_DEV_STD("FMLEUnpublish stream_id=%d, unpublish_tid=%f", stream_id, unpublish_tid);
+		// publish response onFCUnpublish(NetStream.unpublish.Success)
+		if (true)
+		{
+			RtmpOnStatusCallPacket* pkt = new RtmpOnStatusCallPacket();
+
+			pkt->command_name = RTMP_AMF0_COMMAND_ON_FC_UNPUBLISH;
+			pkt->data->set(StatusCode, RtmpAmf0Any::str(StatusCodeUnpublishSuccess));
+			pkt->data->set(StatusDescription, RtmpAmf0Any::str("Stop publishing stream."));
+
+			if ((err = listener_->OnSendAndFreePacket(pkt, stream_id)) != srs_success)
+			{
+				return srs_error_wrap(err, "send NetStream.unpublish.Success");
+			}
+			MS_DEBUG_DEV_STD("send NetStream.unpublish.Success");
+		}
+		// FCUnpublish response
+		if (true)
+		{
+			RtmpFMLEStartResPacket* pkt = new RtmpFMLEStartResPacket(unpublish_tid);
+			if ((err = listener_->OnSendAndFreePacket(pkt, stream_id)) != srs_success)
+			{
+				return srs_error_wrap(err, "send FCUnpublish response");
+			}
+			MS_DEBUG_DEV_STD("send FCUnpublish response");
+		}
+		// publish response onStatus(NetStream.Unpublish.Success)
+		if (true)
+		{
+			RtmpOnStatusCallPacket* pkt = new RtmpOnStatusCallPacket();
+
+			pkt->data->set(StatusLevel, RtmpAmf0Any::str(StatusLevelStatus));
+			pkt->data->set(StatusCode, RtmpAmf0Any::str(StatusCodeUnpublishSuccess));
+			pkt->data->set(StatusDescription, RtmpAmf0Any::str("Stream is now unpublished"));
+			pkt->data->set(StatusClientId, RtmpAmf0Any::str(RTMP_SIG_CLIENT_ID));
+
+			if ((err = listener_->OnSendAndFreePacket(pkt, stream_id)) != srs_success)
+			{
+				return srs_error_wrap(err, "send NetStream.Unpublish.Success");
+			}
+			MS_DEBUG_DEV_STD("send NetStream.Unpublish.Success");
+		}
+
 		return err;
 	}
 } // namespace RTMP

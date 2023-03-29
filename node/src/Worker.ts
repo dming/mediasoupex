@@ -9,7 +9,7 @@ import { Channel } from './Channel';
 import { PayloadChannel } from './PayloadChannel';
 import { Router, RouterOptions } from './Router';
 import { WebRtcServer, WebRtcServerOptions } from './WebRtcServer';
-import { RtmpServer, RtmpServerOptions } from './RtmpServer';
+import { RtmpServer, RtmpServerOptions } from './RTMP/RtmpServer';
 
 export type WorkerLogLevel = 'debug' | 'warn' | 'error' | 'none';
 

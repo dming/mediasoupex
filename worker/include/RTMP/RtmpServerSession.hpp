@@ -1,12 +1,5 @@
-
-
-/**
- * Rtmp Transport , like SRS SrsLiveSource. Managed by RtmpSessionManager.
- * provide producer and consumers.
- */
-
-#ifndef MS_RTMP_SESSION_HPP
-#define MS_RTMP_SESSION_HPP
+#ifndef MS_RTMP_SERVER_SESSION_HPP
+#define MS_RTMP_SERVER_SESSION_HPP
 
 #include "RTMP/RtmpInfo.hpp"
 #include "RTMP/RtmpKernel.hpp"
@@ -16,22 +9,35 @@
 
 namespace RTMP
 {
-	class RtmpServer;
 	class RtmpRouter;
-	class RtmpTransport;
 	/**
-	 * RtmpSession
+	 * RtmpServerSession
 	 * 对应的是RtcTransport，作用包括：
 	 * 1. connection, 处理链接
 	 * 2. 处理和保持链路状态，包括所有的invoke命令
 	 * 3. 如果是publisher，则向RtmpServer创建RtmpRouter. 一个router等于一个直播间 --后面补充
 	 * 4. 持有RtmpPublisher或者RtmpPlayer对象，两者互斥，拥有的对象表明Transport的身份。--后面补充
 	 */
-	class RtmpSession : public RTMP::RtmpTcpConnection::Listener
+	class RtmpServerSession : public RTMP::RtmpTcpConnection::Listener
 	{
 	public:
-		RtmpSession(RtmpServer* rtmpServer);
-		~RtmpSession();
+		class ServerListener
+		{
+		public:
+			// virtual srs_error_t OnServerSessionHandshaked() = 0; // 为了将自身从rtmpServer 的un handshake
+			//                                                      // session list里删除
+			virtual srs_error_t FetchOrCreateRouter(RtmpRequest* req, RtmpRouter** pps) = 0;
+		};
+
+		class Listener
+		{
+		public:
+			virtual srs_error_t RecvMessage(RTC::TransportTuple* tuple, RtmpCommonMessage* msg) = 0;
+		};
+
+	public:
+		RtmpServerSession(ServerListener* serverListener);
+		~RtmpServerSession();
 
 		/* Pure virtual methods inherited from RTMP::RtmpTcpConnection::Listener. */
 	public:
@@ -69,6 +75,15 @@ namespace RTMP
 			return connection_->decode_message(msg, ppacket);
 		}
 
+		srs_error_t SendAndFreeMessage(RtmpSharedPtrMessage* msg, int stream_id)
+		{
+			return connection_->send_and_free_message(msg, stream_id);
+		}
+		srs_error_t SendAndFreePacket(RtmpPacket* packet, int stream_id)
+		{
+			return connection_->send_and_free_packet(packet, stream_id);
+		}
+
 	private:
 		srs_error_t OnRecvMessage(RTC::TransportTuple* tuple, RtmpCommonMessage* msg);
 		// handle Packet Functions
@@ -80,26 +95,13 @@ namespace RTMP
 		// @param server_ip the ip of server.
 		srs_error_t response_connect_app(RtmpRequest* req, const char* server_ip);
 
-	public:
-		// process the FMLE unpublish event.
-		// @unpublish_tid the unpublish request transaction id.
-		virtual srs_error_t fmle_unpublish(int stream_id, double unpublish_tid);
-		// When client(type is play) send pause message,
-		// if is_pause, response the following packets:
-		//     onStatus(NetStream.Pause.Notify)
-		//     StreamEOF
-		// if not is_pause, response the following packets:
-		//     onStatus(NetStream.Unpause.Notify)
-		//     StreamBegin
-		virtual srs_error_t on_play_client_pause(int stream_id, bool is_pause);
-
 	private:
 		// About the rtmp client.
 		RtmpClientInfo* info_;
 
 		RtmpTcpConnection* connection_;
-		RtmpServer* rtmpServer_;
-		RtmpTransport* transport_;
+		ServerListener* serverListener_;
+		Listener* listener_;
 
 		// std::mutex messageMutex;
 	};

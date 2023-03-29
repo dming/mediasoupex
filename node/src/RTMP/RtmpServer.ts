@@ -1,6 +1,6 @@
-import { Logger } from './Logger';
-import { Channel } from './Channel';
-import { EnhancedEventEmitter } from './EnhancedEventEmitter';
+import { Logger } from '../Logger';
+import { Channel } from '../Channel';
+import { EnhancedEventEmitter } from '../EnhancedEventEmitter';
 
 export type RtmpServerListenInfo =
 {

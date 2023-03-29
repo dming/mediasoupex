@@ -78,9 +78,9 @@ namespace RTMP
 		MS_TRACE();
 	}
 
-	inline RtmpSession* RtmpServer::CreateNewSession()
+	inline RtmpServerSession* RtmpServer::CreateNewServerSession()
 	{
-		return new RtmpSession(this);
+		return new RtmpServerSession(this);
 	}
 
 	inline void RtmpServer::OnRtcTcpConnectionClosed(
@@ -89,17 +89,17 @@ namespace RTMP
 		MS_TRACE();
 		RTC::TransportTuple tuple(connection);
 		MS_DEBUG_DEV_STD("OnRtcTcpConnectionClosed hash=%" PRIu64, tuple.hash);
-		std::map<uint64_t, RTMP::RtmpSession*>::iterator sessionIt = sessions_.find(tuple.hash);
+		std::map<uint64_t, RTMP::RtmpServerSession*>::iterator sessionIt = sessions_.find(tuple.hash);
 		if (sessionIt != sessions_.end())
 		{
 			sessions_.erase(sessionIt);
-			RtmpSession* session = sessionIt->second;
-			RtmpRouter* router   = FetchRouter(session->GetStreamUrl());
+			RtmpServerSession* session = sessionIt->second;
+			RtmpRouter* router         = FetchRouter(session->GetStreamUrl());
 			if (router)
 			{
 				MS_DEBUG_DEV_STD(
 				  "OnRtcTcpConnectionClosed fetch router of url:=%s", session->GetStreamUrl().c_str());
-				router->RemoveSession(session);
+				router->RemoveServerSession(session);
 			}
 			MS_DEBUG_DEV_STD(
 			  "OnRtcTcpConnectionClosed FREEP(session) of url:=%s", session->GetStreamUrl().c_str());
@@ -108,17 +108,18 @@ namespace RTMP
 		}
 	}
 
-	inline void RtmpServer::OnRtmpSessionCreated(RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpSession* session)
+	inline void RtmpServer::OnRtmpServerSessionCreated(
+	  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpServerSession* session)
 	{
 		MS_TRACE();
 		RTMP::RtmpTcpConnection* connection = session->GetConnection();
 		MS_ASSERT(connection != nullptr, "session should has connection");
 		RTC::TransportTuple tuple(connection);
-		MS_DEBUG_DEV_STD("OnRtmpSessionCreated, hash=%" PRIu64, tuple.hash);
+		MS_DEBUG_DEV_STD("OnRtmpServerSessionCreated, hash=%" PRIu64, tuple.hash);
 
 		MS_ASSERT(
 		  sessions_.find(tuple.hash) == sessions_.end(),
-		  "cannot dumplicate create RtmpSession: [local:%s :%" PRIu16 ", remote:%s :%" PRIu16 "]",
+		  "cannot dumplicate create RtmpServerSession: [local:%s :%" PRIu16 ", remote:%s :%" PRIu16 "]",
 		  connection->GetLocalIp().c_str(),
 		  connection->GetLocalPort(),
 		  connection->GetPeerIp().c_str(),

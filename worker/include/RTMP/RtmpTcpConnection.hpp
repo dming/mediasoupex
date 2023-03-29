@@ -5,6 +5,7 @@
 #include "RTMP/RtmpHandshake.hpp"
 #include "RTMP/RtmpMessage.hpp"
 #include "RTMP/RtmpPacket.hpp"
+#include "RTMP/RtmpParser.hpp"
 #include "handles/TcpConnectionHandler.hpp"
 #include <uv.h>
 #include <map>
@@ -94,10 +95,7 @@ namespace RTMP
 
 		// >>> For peer in/out
 	private:
-		// The requests sent out, used to build the response.
-		// key: transactionId
-		// value: the request command name
-		std::map<double, std::string> requests;
+		RtmpParser* parser_;
 
 		// >>> For peer in
 	private:
@@ -159,10 +157,6 @@ namespace RTMP
 		virtual srs_error_t on_send_packet(RtmpMessageHeader* mh, RtmpPacket* packet);
 
 	private:
-		// The imp for decode_message
-		virtual srs_error_t do_decode_message(
-		  RtmpMessageHeader& header, Utils::RtmpBuffer* stream, RtmpPacket** ppacket);
-
 		void print_debug_info();
 	};
 } // namespace RTMP

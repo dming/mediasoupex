@@ -6,10 +6,6 @@
 #include "RTMP/RtmpHttp.hpp"
 #include "RTMP/RtmpUtility.hpp"
 
-// FMLE
-#define RTMP_AMF0_COMMAND_ON_FC_PUBLISH "onFCPublish"
-#define RTMP_AMF0_COMMAND_ON_FC_UNPUBLISH "onFCUnpublish"
-
 // default stream id for response the createStream request.
 #define SRS_DEFAULT_SID 1
 

@@ -6,16 +6,12 @@
 #include "Logger.hpp"
 #include "RTMP/RtmpConsumer.hpp"
 #include "RTMP/RtmpPublisher.hpp"
-#include "RTMP/RtmpSession.hpp"
+#include "RTMP/RtmpServerSession.hpp"
 #include "RTMP/RtmpTcpConnection.hpp"
 #include "RTMP/RtmpUtility.hpp"
 #include "RTC/TransportTuple.hpp"
 #include <algorithm>
 #include <sstream>
-
-#define CONST_MAX_JITTER_MS 250
-#define CONST_MAX_JITTER_MS_NEG -250
-#define DEFAULT_FRAME_TIME_MS 10
 
 // for 26ms per audio packet,
 // 115 packets is 3s.
@@ -26,103 +22,6 @@
 
 namespace RTMP
 {
-
-	int srs_time_jitter_string2int(std::string time_jitter)
-	{
-		if (time_jitter == "full")
-		{
-			return RtmpRtmpJitterAlgorithmFULL;
-		}
-		else if (time_jitter == "zero")
-		{
-			return RtmpRtmpJitterAlgorithmZERO;
-		}
-		else
-		{
-			return RtmpRtmpJitterAlgorithmOFF;
-		}
-	}
-
-	RtmpRtmpJitter::RtmpRtmpJitter()
-	{
-		last_pkt_correct_time = -1;
-		last_pkt_time         = 0;
-	}
-
-	RtmpRtmpJitter::~RtmpRtmpJitter()
-	{
-	}
-
-	srs_error_t RtmpRtmpJitter::correct(RtmpSharedPtrMessage* msg, RtmpRtmpJitterAlgorithm ag)
-	{
-		srs_error_t err = srs_success;
-
-		// for performance issue
-		if (ag != RtmpRtmpJitterAlgorithmFULL)
-		{
-			// all jitter correct features is disabled, ignore.
-			if (ag == RtmpRtmpJitterAlgorithmOFF)
-			{
-				return err;
-			}
-
-			// start at zero, but donot ensure monotonically increasing.
-			if (ag == RtmpRtmpJitterAlgorithmZERO)
-			{
-				// for the first time, last_pkt_correct_time is -1.
-				if (last_pkt_correct_time == -1)
-				{
-					last_pkt_correct_time = msg->timestamp;
-				}
-				msg->timestamp -= last_pkt_correct_time;
-				return err;
-			}
-
-			// other algorithm, ignore.
-			return err;
-		}
-
-		// full jitter algorithm, do jitter correct.
-		// set to 0 for metadata.
-		if (!msg->is_av())
-		{
-			msg->timestamp = 0;
-			return err;
-		}
-
-		/**
-		 * we use a very simple time jitter detect/correct algorithm:
-		 * 1. delta: ensure the delta is positive and valid,
-		 *     we set the delta to DEFAULT_FRAME_TIME_MS,
-		 *     if the delta of time is nagative or greater than CONST_MAX_JITTER_MS.
-		 * 2. last_pkt_time: specifies the original packet time,
-		 *     is used to detect next jitter.
-		 * 3. last_pkt_correct_time: simply add the positive delta,
-		 *     and enforce the time monotonically.
-		 */
-		int64_t time  = msg->timestamp;
-		int64_t delta = time - last_pkt_time;
-
-		// if jitter detected, reset the delta.
-		if (delta < CONST_MAX_JITTER_MS_NEG || delta > CONST_MAX_JITTER_MS)
-		{
-			// use default 10ms to notice the problem of stream.
-			// @see https://github.com/ossrs/srs/issues/425
-			delta = DEFAULT_FRAME_TIME_MS;
-		}
-
-		last_pkt_correct_time = std::max((int64_t)0, last_pkt_correct_time + delta);
-
-		msg->timestamp = last_pkt_correct_time;
-		last_pkt_time  = time;
-
-		return err;
-	}
-
-	int64_t RtmpRtmpJitter::get_time()
-	{
-		return last_pkt_correct_time;
-	}
 
 	RtmpMixQueue::RtmpMixQueue()
 	{
@@ -622,73 +521,98 @@ namespace RTMP
 		return err;
 	}
 
-	srs_error_t RtmpRouter::CreatePublisher(RtmpSession* session, RtmpPublisher** publisher)
+	srs_error_t RtmpRouter::OnCreateServerPublisher(RtmpPublisher* publisher)
 	{
-		MS_DEBUG_DEV_STD("CreatePublisher start");
-		srs_error_t err = srs_success;
-		if (publisher_)
-		{
-			MS_DEBUG_DEV_STD("CreatePublisher start 1 error !!!");
-			MS_ERROR_STD(
-			  "publisher_ already in router , %s", publisher_->GetSession()->GetStreamUrl().c_str());
-			return srs_error_new(ERROR_RTMP_SOUP_ERROR, "publisher_ already in router");
-		}
-
-		publisher_                = new RtmpPublisher(this, session);
-		*publisher                = publisher_;
+		MS_DEBUG_DEV_STD("OnCreateServerPublisher start");
+		srs_error_t err           = srs_success;
+		publisher_                = publisher;
 		is_monotonically_increase = true;
 		last_packet_time          = 0;
 		gop_cache_->clear();
 		meta->dispose();
-		MS_DEBUG_DEV_STD("CreatePublisher : %s", session->GetStreamUrl().c_str());
 		return err;
 	}
 
-	srs_error_t RtmpRouter::RemoveSession(RtmpSession* session)
+	bool RtmpRouter::IsPublishing()
 	{
-		srs_error_t err = srs_success;
-		if (publisher_ && publisher_->GetSession() == session)
+		return publisher_ != nullptr;
+	}
+
+	srs_error_t RtmpRouter::CreateServerTransport(
+	  RtmpServerSession* session, bool isPublisher, RtmpServerTransport** transport)
+	{
+		MS_DEBUG_DEV_STD("CreateServerTransport start");
+		srs_error_t err         = srs_success;
+		RtmpServerTransport* st = nullptr;
+		if (isPublisher)
 		{
-			MS_DEBUG_DEV_STD("RemoveSession remove Publisher");
-			FREEP(publisher_);
-			gop_cache_->clear();
-			meta->dispose();
-			return err;
+			if (publisher_)
+			{
+				MS_ERROR_STD("publisher_ already in router , %s", session->GetStreamUrl().c_str());
+				return srs_error_new(ERROR_RTMP_SOUP_ERROR, "publisher_ already in router");
+			}
+
+			st = new RtmpServerTransport(this, isPublisher, session);
+			this->OnCreateServerPublisher(st->GetPublisher());
+		}
+		else
+		{
+			RtmpTcpConnection* connection = session->GetConnection();
+			if (!connection)
+			{
+				return srs_error_new(ERROR_RTMP_SOUP_ERROR, "connection not exist");
+			}
+			RTC::TransportTuple tuple(connection);
+			if (consumers_.find(tuple.hash) != consumers_.end())
+			{
+				return srs_error_new(ERROR_RTMP_SOUP_ERROR, "consumer already exist");
+			}
+			st                     = new RtmpServerTransport(this, isPublisher, session);
+			consumers_[tuple.hash] = st->GetConsumer();
 		}
 
-		RtmpTcpConnection* connection = session->GetConnection();
-		RTC::TransportTuple tuple(connection);
-		if (consumers_.find(tuple.hash) == consumers_.end())
-		{
-			MS_DEBUG_DEV_STD(
-			  "RemoveSession cannot remove Consumer, session not exist.  tuple.hash=%" PRIu64, tuple.hash);
-			return srs_error_new(ERROR_RTMP_SOUP_ERROR, "session not exist");
-		}
-		MS_DEBUG_DEV_STD("RemoveSession remove Consumer tuple.hash=%" PRIu64, tuple.hash);
-
-		RtmpConsumer* consumer = consumers_[tuple.hash];
-		consumers_.erase(tuple.hash);
-		FREEP(consumer);
-
+		transports_.push_back(st);
+		*transport = st;
+		MS_DEBUG_DEV_STD("StreamURL: %s, isPublisher:%d", session->GetStreamUrl().c_str(), isPublisher);
 		return err;
 	}
 
-	srs_error_t RtmpRouter::CreateConsumer(RtmpSession* session, RtmpConsumer*& consumer)
+	srs_error_t RtmpRouter::RemoveServerSession(RtmpServerSession* session)
 	{
-		srs_error_t err               = srs_success;
-		RtmpTcpConnection* connection = session->GetConnection();
-		if (!connection)
+		srs_error_t err                      = srs_success;
+		RtmpServerTransport* serverTransport = nullptr;
+		for (auto it = transports_.begin(); it != transports_.end(); it++)
 		{
-			return srs_error_new(ERROR_RTMP_SOUP_ERROR, "connection not exist");
+			if ((serverTransport = dynamic_cast<RtmpServerTransport*>(*it)))
+			{
+				if (session == serverTransport->GetSession())
+				{
+					if (serverTransport->IsPublisher() && publisher_ == serverTransport->GetPublisher())
+					{
+						MS_DEBUG_DEV_STD("RemoveServerSession remove Publisher");
+						publisher_ = nullptr;
+						gop_cache_->clear();
+						meta->dispose();
+					}
+					else if (serverTransport->IsConsumer())
+					{
+						RtmpTcpConnection* connection = session->GetConnection();
+						RTC::TransportTuple tuple(connection);
+						if (consumers_.find(tuple.hash) != consumers_.end())
+						{
+							MS_DEBUG_DEV_STD("RemoveServerSession remove Consumer tuple.hash=%" PRIu64, tuple.hash);
+							RtmpConsumer* consumer = consumers_[tuple.hash];
+							consumers_.erase(tuple.hash);
+						}
+					}
+					transports_.erase(it);
+					FREEP(serverTransport); // will delete publisher consumer
+					return err;
+				}
+			}
 		}
-		RTC::TransportTuple tuple(connection);
-		if (consumers_.find(tuple.hash) != consumers_.end())
-		{
-			return srs_error_new(ERROR_RTMP_SOUP_ERROR, "consumer already exist");
-		}
-		consumer               = new RtmpConsumer(this, session);
-		consumers_[tuple.hash] = consumer;
-		return err;
+		MS_DEBUG_DEV_STD("cannot remove, session not exist in router. ");
+		return srs_error_new(ERROR_RTMP_SOUP_ERROR, "session not exist");
 	}
 
 	srs_error_t RtmpRouter::ConsumerDump(RtmpConsumer* consumer)
@@ -1143,7 +1067,7 @@ namespace RTMP
 		return err;
 	}
 
-	srs_error_t RtmpRouter::on_meta_data(RtmpCommonMessage* msg, RtmpOnMetaDataPacket* metadata)
+	srs_error_t RtmpRouter::OnMetaData(RtmpCommonMessage* msg, RtmpOnMetaDataPacket* metadata)
 	{
 		srs_error_t err = srs_success;
 
@@ -1199,7 +1123,7 @@ namespace RTMP
 		}
 
 		// Copy to hub to all utilities.
-		// return hub->on_meta_data(meta->data(), metadata);
+		// return hub->OnMetaData(meta->data(), metadata);
 
 		return err;
 	}

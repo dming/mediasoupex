@@ -2,7 +2,7 @@
 #define MS_RTMP_TCP_SERVER_HPP
 
 #include "common.hpp"
-#include "Rtmp/RtmpSession.hpp"
+#include "Rtmp/RtmpServerSession.hpp"
 #include "Rtmp/RtmpTcpConnection.hpp"
 #include "handles/TcpConnectionHandler.hpp"
 #include "handles/TcpServerHandler.hpp"
@@ -20,10 +20,11 @@ namespace RTMP
 			virtual ~Listener() = default;
 
 		public:
-			virtual RtmpSession* CreateNewSession() = 0;
+			virtual RtmpServerSession* CreateNewServerSession() = 0;
 			virtual void OnRtcTcpConnectionClosed(
 			  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpTcpConnection* connection) = 0;
-			virtual void OnRtmpSessionCreated(RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpSession* session) = 0;
+			virtual void OnRtmpServerSessionCreated(
+			  RTMP::RtmpTcpServer* tcpServer, RTMP::RtmpServerSession* session) = 0;
 		};
 
 	public:

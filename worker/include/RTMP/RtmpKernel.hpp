@@ -99,4 +99,8 @@ typedef int64_t srs_utime_t;
 
 // H.264 nalu header type mask.
 const uint8_t kNalTypeMask = 0x1F;
+
+// FMLE
+#define RTMP_AMF0_COMMAND_ON_FC_PUBLISH "onFCPublish"
+#define RTMP_AMF0_COMMAND_ON_FC_UNPUBLISH "onFCUnpublish"
 #endif

@@ -44,7 +44,7 @@ namespace RTMP
 	{
 	public:
 		RtmpHandshake();
-		~RtmpHandshake();
+		virtual ~RtmpHandshake();
 
 		// int Parse(uint8_t* data, size_t dataLen, char* res, size_t resLen);
 		int HandshakeWithClient(RtmpHandshakeBytes* hsBytes, RtmpTcpConnection* connection);
