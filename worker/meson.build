@@ -165,6 +165,7 @@ common_sources = [
   'src/RTMP/RtmpAmf0.cpp',
   'src/RTMP/RtmpCodec.cpp',
   'src/RTMP/RtmpConsumer.cpp',
+  'src/RTMP/RtmpDirectTransport.cpp',
   'src/RTMP/RtmpFormat.cpp',
   'src/RTMP/RtmpHandshake.cpp',
   'src/RTMP/RtmpHttp.cpp',
@@ -238,6 +239,8 @@ catch2_proj = subproject(
 libwebrtc_include_directories = include_directories('include')
 subdir('deps/libwebrtc')
 subdir('deps/http-parser')
+subdir('deps/uuidxx')
+
 
 dependencies = [
   abseil_cpp_proj.get_variable('absl_container_dep'),
@@ -248,6 +251,7 @@ dependencies = [
   usrsctp_proj.get_variable('usrsctp_dep'),
   libwebrtc_dep,
   libhttpparser_dep,
+  uuidxx_dep,
 ]
 
 link_whole = [
@@ -259,6 +263,7 @@ link_whole = [
   usrsctp_proj.get_variable('usrsctp'),
   libwebrtc,
   libhttpparser,
+  uuidxx,
 ]
 
 if host_machine.system() == 'windows'

@@ -51,7 +51,7 @@ namespace RTMP
 			RtmpAutoFree(RtmpPacket, packet);
 
 			// for flash, any packet is republish.
-			if (listener_->GetInfo()->type == RtmpRtmpConnFlashPublish)
+			if (listener_->GetInfoType() == RtmpRtmpConnFlashPublish)
 			{
 				// flash unpublish.
 				// TODO: maybe need to support republish.
@@ -64,7 +64,7 @@ namespace RTMP
 			{
 				MS_DEBUG_DEV("Publisher RtmpFMLEStartPacket FMLEUnpublish");
 				RtmpFMLEStartPacket* unpublish = dynamic_cast<RtmpFMLEStartPacket*>(packet);
-				if ((err = FMLEUnpublish(listener_->GetInfo()->res->stream_id, unpublish->transaction_id)) != srs_success)
+				if ((err = FMLEUnpublish(listener_->GetStreamId(), unpublish->transaction_id)) != srs_success)
 				{
 					return srs_error_wrap(err, "rtmp: republish");
 				}

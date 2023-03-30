@@ -6,9 +6,6 @@
 #include "RTMP/RtmpHttp.hpp"
 #include "RTMP/RtmpUtility.hpp"
 
-// default stream id for response the createStream request.
-#define SRS_DEFAULT_SID 1
-
 namespace RTMP
 {
 

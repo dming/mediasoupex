@@ -8,6 +8,7 @@
 #include "Utils.hpp"
 #include "RTC/TransportTuple.hpp"
 #include <stdexcept>
+#include <uuidxx.h>
 
 namespace RTMP
 {
@@ -20,7 +21,7 @@ namespace RTMP
 
 		auto jsonListenInfoIt = data.find("listenInfo");
 		if (jsonListenInfoIt == data.end())
-			MS_THROW_TYPE_ERROR("missing listenInfo 2");
+			MS_THROW_TYPE_ERROR("missing listenInfo");
 		else if (!jsonListenInfoIt->is_object())
 			MS_THROW_TYPE_ERROR("wrong listenInfo (not an object)");
 
@@ -31,7 +32,7 @@ namespace RTMP
 		// data format: RtmpServerListenInfo:
 		auto jsonListenIpIt = jsonListenInfo.find("listenIp");
 		if (jsonListenIpIt == jsonListenInfo.end())
-			MS_THROW_TYPE_ERROR("missing listenIp 2");
+			MS_THROW_TYPE_ERROR("missing listenIp");
 		else if (!jsonListenIpIt->is_string())
 			MS_THROW_TYPE_ERROR("wrong listenIp (not an string)");
 
@@ -172,26 +173,25 @@ namespace RTMP
 
 		MS_DEBUG_DEV_STD("new live Router, stream_url=%s", streamUrl.c_str());
 
-		try
-		{
-			router = new RtmpRouter();
-			if ((err = router->initualize(req)) != srs_success)
-			{
-				MS_ERROR_STD("ERROR Router initualize, stream_url=%s", streamUrl.c_str());
-				err = srs_error_wrap(err, "init Router %s", streamUrl.c_str());
-				FREEP(router);
-				return err;
-			}
+		std::string id = "RTMP-ROUTER-" + uuidxx::uuid::Generate().ToString();
 
-			routers_[streamUrl] = router;
-			*pps                = router;
+		router = new RtmpRouter(this->shared, id);
+		if ((err = router->initualize(req)) != srs_success)
+		{
+			MS_ERROR_STD("ERROR Router initualize, stream_url=%s", streamUrl.c_str());
+			err = srs_error_wrap(err, "init Router %s", streamUrl.c_str());
+			FREEP(router);
 			return err;
 		}
-		catch (std::exception& e)
-		{
-			MS_ERROR_STD("ERROR Router FUCKKKKKK!!, stream_url=%s", streamUrl.c_str());
-			return srs_error_new(ERROR_RTMP_SOUP_ERROR, "ERROR Router FUCKKKKKK!!");
-		}
+
+		json data          = json::object();
+		data["id"]         = id;
+		data["stream_url"] = streamUrl;
+		this->shared->channelNotifier->Emit(this->id, "create_rtmp_router", data);
+
+		routers_[streamUrl] = router;
+		*pps                = router;
+		return err;
 	}
 
 } // namespace RTMP

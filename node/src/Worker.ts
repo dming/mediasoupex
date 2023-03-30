@@ -233,6 +233,9 @@ export class Worker extends EnhancedEventEmitter<WorkerEvents>
 	// Routers set.
 	readonly #routers: Set<Router> = new Set();
 
+	// Routers set.
+	readonly #rtmpServers: Set<RtmpServer> = new Set();
+
 	// Observer instance.
 	readonly #observer = new EnhancedEventEmitter<WorkerObserverEvents>();
 
@@ -554,6 +557,13 @@ export class Worker extends EnhancedEventEmitter<WorkerEvents>
 		}
 		this.#webRtcServers.clear();
 
+		// Close every RtmpServer.
+		for (const rtmpServer of this.#rtmpServers)
+		{
+			rtmpServer.workerClosed();
+		}
+		this.#rtmpServers.clear();
+
 		// Emit observer event.
 		this.#observer.safeEmit('close');
 	}
@@ -657,10 +667,14 @@ export class Worker extends EnhancedEventEmitter<WorkerEvents>
 		await this.#channel.request('worker.createRtmpServer', undefined, reqData);
 		const rtmpServer = new RtmpServer(
 			{
-				internal : { rtmpServerId: reqData.rtmpServerId },
-				channel  : this.#channel,
+				internal       : { rtmpServerId: reqData.rtmpServerId },
+				channel        : this.#channel,
+				payloadChannel : this.#payloadChannel,
 				appData
 			});
+
+		this.#rtmpServers.add(rtmpServer);
+		rtmpServer.on('@close', () => this.#rtmpServers.delete(rtmpServer));
 		
 		// Emit observer event.
 		this.#observer.safeEmit('newrtmpserver', rtmpServer);

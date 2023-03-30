@@ -44,8 +44,8 @@ namespace RTMP
 		// Accept it.
 		AcceptTcpConnection(connection);
 
-		// [dming] TODO: session
-		// 应该注册到RtmpServer里，即this->listener应该保有所有的session，并在connection
+		// [dming]
+		// session 应该注册到RtmpServer里，即this->listener应该保有所有的session，并在connection
 		// close的时候，调用其析构函数
 		if (this->connections.find(connection) != this->connections.end())
 		{

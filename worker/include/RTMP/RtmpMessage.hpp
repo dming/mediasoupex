@@ -337,6 +337,7 @@ namespace RTMP
 		virtual bool is_av();
 		virtual bool is_audio();
 		virtual bool is_video();
+		virtual int messageType();
 
 	public:
 		// generate the chunk header to cache.

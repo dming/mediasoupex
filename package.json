@@ -50,6 +50,7 @@
   "scripts": {
     "prepare": "node npm-scripts.js prepare",
     "postinstall": "node npm-scripts.js postinstall",
+    "build": "node npm-scripts.js build",
     "typescript:build": "node npm-scripts.js typescript:build",
     "typescript:watch": "node npm-scripts.js typescript:watch",
     "worker:build": "node npm-scripts.js worker:build",

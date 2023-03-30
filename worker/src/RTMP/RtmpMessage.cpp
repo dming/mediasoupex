@@ -312,6 +312,11 @@ namespace RTMP
 		return ptr->header.message_type == RTMP_MSG_VideoMessage;
 	}
 
+	int RtmpSharedPtrMessage::messageType()
+	{
+		return ptr->header.message_type;
+	}
+
 	int RtmpSharedPtrMessage::chunk_header(char* cache, int nb_cache, bool c0)
 	{
 		if (c0)

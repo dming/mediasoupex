@@ -15,7 +15,8 @@ namespace RTMP
 		{
 		public:
 			virtual ~Listener()                                                                = default;
-			virtual RtmpClientInfo* GetInfo()                                                  = 0;
+			virtual RtmpRtmpConnType GetInfoType()                                             = 0;
+			virtual int GetStreamId()                                                          = 0;
 			virtual srs_error_t OnDecodeMessage(RtmpCommonMessage* msg, RtmpPacket** ppacket)  = 0;
 			virtual srs_error_t OnSendAndFreeMessage(RtmpSharedPtrMessage* msg, int stream_id) = 0;
 			virtual srs_error_t OnSendAndFreePacket(RtmpPacket* packet, int stream_id)         = 0;

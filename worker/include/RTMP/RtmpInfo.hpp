@@ -9,6 +9,9 @@
 #include <map>
 #include <string>
 
+// default stream id for response the createStream request.
+#define SRS_DEFAULT_SID 1
+
 namespace RTMP
 {
 	// The original request from client.
@@ -92,6 +95,14 @@ namespace RTMP
 	public:
 		RtmpResponse();
 		virtual ~RtmpResponse();
+
+	public:
+		RtmpResponse* copy()
+		{
+			RtmpResponse* cp = new RtmpResponse();
+			cp->stream_id    = this->stream_id;
+			return cp;
+		}
 	};
 
 	// The rtmp client type.
@@ -135,6 +146,16 @@ namespace RTMP
 		{
 			return type == RtmpRtmpConnFMLEPublish || type == RtmpRtmpConnFlashPublish ||
 			       type == RtmpRtmpConnHaivisionPublish;
+		}
+
+		RtmpClientInfo* copy()
+		{
+			RtmpClientInfo* cp = new RtmpClientInfo();
+			cp->type           = this->type;
+			cp->edge           = this->edge;
+			cp->req            = this->req->copy();
+			cp->res            = this->res->copy();
+			return cp;
 		}
 	};
 

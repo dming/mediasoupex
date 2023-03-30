@@ -54,6 +54,19 @@ switch (task)
 		break;
 	}
 
+	case 'build':
+	{
+		//'typescript:build'
+		installNodeDeps();
+		buildTypescript(/* force */ true);
+		replaceVersion();
+
+		//'worker:build'
+		buildWorker();
+
+		break;
+	}
+
 	case 'typescript:build':
 	{
 		installNodeDeps();

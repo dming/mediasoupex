@@ -73,7 +73,9 @@ namespace Channel
 		{ "rtpObserver.pause",                           ChannelRequest::MethodId::RTP_OBSERVER_PAUSE                               },
 		{ "rtpObserver.resume",                          ChannelRequest::MethodId::RTP_OBSERVER_RESUME                              },
 		{ "rtpObserver.addProducer",                     ChannelRequest::MethodId::RTP_OBSERVER_ADD_PRODUCER                        },
-		{ "rtpObserver.removeProducer",                  ChannelRequest::MethodId::RTP_OBSERVER_REMOVE_PRODUCER                     }
+		{ "rtpObserver.removeProducer",                  ChannelRequest::MethodId::RTP_OBSERVER_REMOVE_PRODUCER                     },
+		// rtmp
+		{ "rtmpRouter.createDirectTransport",            ChannelRequest::MethodId::RTMP_ROUTER_CREATE_DIRECT_TRANSPORT       		},
 	};
 	// clang-format on
 

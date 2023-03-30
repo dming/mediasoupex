@@ -4,7 +4,9 @@
 #include "RTMP/RtmpRouter.hpp"
 #include "CplxError.hpp"
 #include "Logger.hpp"
+#include "MediaSoupErrors.hpp"
 #include "RTMP/RtmpConsumer.hpp"
+#include "RTMP/RtmpDirectTransport.hpp"
 #include "RTMP/RtmpPublisher.hpp"
 #include "RTMP/RtmpServerSession.hpp"
 #include "RTMP/RtmpTcpConnection.hpp"
@@ -12,6 +14,7 @@
 #include "RTC/TransportTuple.hpp"
 #include <algorithm>
 #include <sstream>
+#include <uuidxx.h>
 
 // for 26ms per audio packet,
 // 115 packets is 3s.
@@ -483,8 +486,10 @@ namespace RTMP
 		return cached_video_count == 0;
 	}
 
-	RtmpRouter::RtmpRouter() : req_(nullptr), publisher_(nullptr)
+	RtmpRouter::RtmpRouter(RTC::Shared* shared, std::string id)
+	  : shared(shared), id(id), req_(nullptr), publisher_(nullptr)
 	{
+		MS_DEBUG_DEV("RtmpRouter id is %s", id.c_str());
 		jitter_algorithm = RtmpRtmpJitterAlgorithmOFF;
 
 		mix_correct = false;
@@ -499,10 +504,27 @@ namespace RTMP
 		last_packet_time          = 0;
 
 		atc = false;
+
+		this->shared->channelMessageRegistrator->RegisterHandler(
+		  this->id,
+		  /*channelRequestHandler*/ this,
+		  /*payloadChannelRequestHandler*/ nullptr,
+		  /*payloadChannelNotificationHandler*/ nullptr);
 	}
 
 	RtmpRouter::~RtmpRouter()
 	{
+		this->shared->channelMessageRegistrator->UnregisterHandler(this->id);
+
+		// Close all Transports.
+		for (auto& kv : this->mapTransports_)
+		{
+			auto* transport = kv.second;
+
+			FREEP(transport);
+		}
+		this->mapTransports_.clear();
+
 		FREEP(req_);
 		FREEP(gop_cache_);
 		FREEP(meta);
@@ -519,6 +541,44 @@ namespace RTMP
 
 		jitter_algorithm = RtmpRtmpJitterAlgorithmOFF; // TODO: read from conf
 		return err;
+	}
+
+	void RtmpRouter::HandleRequest(Channel::ChannelRequest* request)
+	{
+		MS_TRACE();
+
+		switch (request->methodId)
+		{
+			case Channel::ChannelRequest::MethodId::RTMP_ROUTER_CREATE_DIRECT_TRANSPORT:
+			{
+				std::string transportId;
+
+				// This may throw.
+				SetNewTransportIdFromData(request->data, transportId);
+
+				auto* directTransport =
+				  new RtmpDirectTransport(this->shared, transportId, this, false); // 默认只能是consumer类型
+
+				// Insert into the map.
+				this->mapTransports_[transportId] = directTransport;
+				this->consumers_[transportId]     = directTransport->GetConsumer();
+
+				MS_DEBUG_DEV("RtmpDirectTransport created [transportId:%s]", transportId.c_str());
+
+				json data = json::object();
+
+				directTransport->FillJson(data);
+
+				request->Accept(data);
+
+				break;
+			}
+
+			default:
+			{
+				MS_THROW_ERROR("unknown method '%s'", request->method.c_str());
+			}
+		}
 	}
 
 	srs_error_t RtmpRouter::OnCreateServerPublisher(RtmpPublisher* publisher)
@@ -538,12 +598,14 @@ namespace RTMP
 		return publisher_ != nullptr;
 	}
 
+	// todo: id 应该从参数里传进来, 还要判断id是否合法，即是否已经存在于mapTransports里面
 	srs_error_t RtmpRouter::CreateServerTransport(
 	  RtmpServerSession* session, bool isPublisher, RtmpServerTransport** transport)
 	{
 		MS_DEBUG_DEV_STD("CreateServerTransport start");
 		srs_error_t err         = srs_success;
 		RtmpServerTransport* st = nullptr;
+		std::string id;
 		if (isPublisher)
 		{
 			if (publisher_)
@@ -552,27 +614,21 @@ namespace RTMP
 				return srs_error_new(ERROR_RTMP_SOUP_ERROR, "publisher_ already in router");
 			}
 
-			st = new RtmpServerTransport(this, isPublisher, session);
+			id = "RTMP-TRANSPORT-" + uuidxx::uuid::Generate().ToString();
+			st = new RtmpServerTransport(this->shared, id, this, isPublisher, session);
 			this->OnCreateServerPublisher(st->GetPublisher());
 		}
 		else
 		{
-			RtmpTcpConnection* connection = session->GetConnection();
-			if (!connection)
-			{
-				return srs_error_new(ERROR_RTMP_SOUP_ERROR, "connection not exist");
-			}
-			RTC::TransportTuple tuple(connection);
-			if (consumers_.find(tuple.hash) != consumers_.end())
-			{
-				return srs_error_new(ERROR_RTMP_SOUP_ERROR, "consumer already exist");
-			}
-			st                     = new RtmpServerTransport(this, isPublisher, session);
-			consumers_[tuple.hash] = st->GetConsumer();
+			id             = "RTMP-TRANSPORT-" + uuidxx::uuid::Generate().ToString();
+			st             = new RtmpServerTransport(this->shared, id, this, isPublisher, session);
+			consumers_[id] = st->GetConsumer();
 		}
-
-		transports_.push_back(st);
-		*transport = st;
+		mapTransports_[id] = st;
+		*transport         = st;
+		json data          = json::object();
+		st->FillJson(data);
+		this->shared->channelNotifier->Emit(this->id, "create_transport", data);
 		MS_DEBUG_DEV_STD("StreamURL: %s, isPublisher:%d", session->GetStreamUrl().c_str(), isPublisher);
 		return err;
 	}
@@ -581,9 +637,9 @@ namespace RTMP
 	{
 		srs_error_t err                      = srs_success;
 		RtmpServerTransport* serverTransport = nullptr;
-		for (auto it = transports_.begin(); it != transports_.end(); it++)
+		for (auto it = mapTransports_.begin(); it != mapTransports_.end(); it++)
 		{
-			if ((serverTransport = dynamic_cast<RtmpServerTransport*>(*it)))
+			if ((serverTransport = dynamic_cast<RtmpServerTransport*>(it->second)))
 			{
 				if (session == serverTransport->GetSession())
 				{
@@ -596,16 +652,15 @@ namespace RTMP
 					}
 					else if (serverTransport->IsConsumer())
 					{
-						RtmpTcpConnection* connection = session->GetConnection();
-						RTC::TransportTuple tuple(connection);
-						if (consumers_.find(tuple.hash) != consumers_.end())
+						const std::string id = serverTransport->GetId();
+						if (consumers_.find(id) != consumers_.end())
 						{
-							MS_DEBUG_DEV_STD("RemoveServerSession remove Consumer tuple.hash=%" PRIu64, tuple.hash);
-							RtmpConsumer* consumer = consumers_[tuple.hash];
-							consumers_.erase(tuple.hash);
+							MS_DEBUG_DEV_STD("RemoveServerSession remove Consumer id=%s", id.c_str());
+							RtmpConsumer* consumer = consumers_[id];
+							consumers_.erase(id);
 						}
 					}
-					transports_.erase(it);
+					mapTransports_.erase(it);
 					FREEP(serverTransport); // will delete publisher consumer
 					return err;
 				}
@@ -1126,5 +1181,24 @@ namespace RTMP
 		// return hub->OnMetaData(meta->data(), metadata);
 
 		return err;
+	}
+
+	void RtmpRouter::SetNewTransportIdFromData(json& data, std::string& transportId) const
+	{
+		MS_TRACE();
+
+		auto jsonTransportIdIt = data.find("rtmpTransportId");
+
+		if (jsonTransportIdIt == data.end() || !jsonTransportIdIt->is_string())
+		{
+			MS_THROW_TYPE_ERROR("missing rtmpTransportId");
+		}
+
+		transportId.assign(jsonTransportIdIt->get<std::string>());
+
+		if (this->mapTransports_.find(transportId) != this->mapTransports_.end())
+		{
+			MS_THROW_ERROR("a Transport with same transportId already exists");
+		}
 	}
 } // namespace RTMP

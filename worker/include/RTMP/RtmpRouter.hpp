@@ -8,9 +8,11 @@
 #include "RTMP/RtmpKernel.hpp"
 #include "RTMP/RtmpMessage.hpp"
 #include "RTMP/RtmpServerTransport.hpp"
-#include <list>
-#include <map>
+#include "RTC/Shared.hpp"
+#include <absl/container/flat_hash_map.h>
+#include <nlohmann/json.hpp>
 #include <stdint.h>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -155,16 +157,21 @@ namespace RTMP
 		virtual bool pure_audio();
 	};
 
-	class RtmpRouter : public RtmpTransport::Listener
+	class RtmpRouter : public Channel::ChannelSocket::RequestHandler, public RtmpTransport::Listener
 	{
 	public:
-		RtmpRouter(/* args */);
+		RtmpRouter(RTC::Shared* shared, std::string id);
 		~RtmpRouter();
 
+	public:
 		srs_error_t initualize(RtmpRequest* req);
 		srs_error_t CreateServerTransport(
 		  RtmpServerSession* session, bool isPublisher, RtmpServerTransport** transport);
 		srs_error_t RemoveServerSession(RtmpServerSession* session);
+
+		/* Methods inherited from Channel::ChannelSocket::RequestHandler. */
+	public:
+		void HandleRequest(Channel::ChannelRequest* request) override;
 
 	private:
 		// The time jitter algorithm for vhost.
@@ -205,10 +212,18 @@ namespace RTMP
 		srs_error_t on_video_imp(RtmpSharedPtrMessage* msg);
 
 	private:
+		void SetNewTransportIdFromData(json& data, std::string& transportId) const;
+
+	private:
+		// Passed by argument.
+		std::string id;
+		RTC::Shared* shared;
+
 		RtmpRequest* req_;
 		RtmpPublisher* publisher_;
-		std::list<RtmpTransport*> transports_;
-		std::unordered_map<uint64_t, RtmpConsumer*> consumers_;
+		// Allocated by this.
+		absl::flat_hash_map<std::string, RtmpTransport*> mapTransports_;
+		std::unordered_map<std::string, RtmpConsumer*> consumers_;
 	};
 
 } // namespace RTMP

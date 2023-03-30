@@ -10,15 +10,21 @@ namespace RTMP
 	{
 	public:
 		explicit RtmpServerTransport(
+		  RTC::Shared* shared,
+		  std::string id,
 		  RtmpTransport::Listener* listener,
 		  bool IsPublisher,
 		  RtmpServerSession* session); //  Listener为router
 
 		virtual ~RtmpServerTransport();
 
+	public:
+		void FillJson(json& jsonObject) const override;
+
 		/* Pure virtual methods inherited from IRtmpTransport. */
 	public:
-		RtmpClientInfo* GetInfo() override;
+		RtmpRtmpConnType GetInfoType() override;
+		int GetStreamId() override;
 		srs_error_t OnDecodeMessage(RtmpCommonMessage* msg, RtmpPacket** ppacket) override;
 		srs_error_t OnSendAndFreeMessage(RtmpSharedPtrMessage* msg, int stream_id) override;
 		srs_error_t OnSendAndFreePacket(RtmpPacket* packet, int stream_id) override;

@@ -1275,11 +1275,7 @@ namespace RTMP
 	srs_error_t RtmpTcpConnection::do_iovs_send(uv_buf_t* iovs, int size)
 	{
 		srs_error_t err = srs_success;
-		if (b_showDebugLog)
-		{
-			MS_DEBUG_DEV_STD("do_iovs_send send size=%d", size);
-		}
-		size_t len = 0;
+		size_t len      = 0;
 
 		std::vector<WriteData> datas;
 		for (int i = 0; i < size; ++i)
@@ -1293,7 +1289,7 @@ namespace RTMP
 
 		if (b_showDebugLog)
 		{
-			MS_DEBUG_DEV_STD("do_iovs_send send len=%" PRIu64 "", len);
+			MS_DEBUG_DEV_STD("do_iovs_send send size=%d len=%" PRIu64 "", size, len);
 		}
 		return err;
 	}

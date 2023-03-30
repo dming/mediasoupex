@@ -99,7 +99,7 @@ namespace RTMP
 			}
 		}
 
-		return this->listener_->OnSendAndFreeMessage(msg, listener_->GetInfo()->res->stream_id);
+		return this->listener_->OnSendAndFreeMessage(msg, listener_->GetStreamId());
 	}
 
 	int64_t RtmpConsumer::get_time()
@@ -112,7 +112,7 @@ namespace RTMP
 		srs_error_t err = srs_success;
 		MS_DEBUG_DEV("stream consumer change pause state %d=>%d", b_paused_, is_pause);
 
-		int stream_id = listener_->GetInfo()->res->stream_id;
+		int stream_id = listener_->GetStreamId();
 		if (is_pause)
 		{
 			// onStatus(NetStream.Pause.Notify)

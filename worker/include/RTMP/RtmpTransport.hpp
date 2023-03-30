@@ -3,13 +3,20 @@
 
 #include "CplxError.hpp"
 #include "RTMP/RtmpConsumer.hpp"
+#include "RTMP/RtmpInfo.hpp"
 #include "RTMP/RtmpMessage.hpp"
 #include "RTMP/RtmpPublisher.hpp"
+#include "RTC/Shared.hpp"
 #include "RTC/TransportTuple.hpp"
+#include <nlohmann/json.hpp>
 
 namespace RTMP
 {
-	class RtmpTransport : public RtmpConsumer::Listener, public RtmpPublisher::Listener
+	class RtmpTransport : public RtmpConsumer::Listener,
+	                      public RtmpPublisher::Listener,
+	                      public Channel::ChannelSocket::RequestHandler,
+	                      public PayloadChannel::PayloadChannelSocket::RequestHandler,
+	                      public PayloadChannel::PayloadChannelSocket::NotificationHandler
 	{
 	public:
 		class Listener // 其实就是router
@@ -26,12 +33,29 @@ namespace RTMP
 		};
 
 	public:
-		explicit RtmpTransport(Listener* router, bool IsPublisher); // router 应该为Listener
+		explicit RtmpTransport(
+		  RTC::Shared* shared, std::string id, Listener* router, bool IsPublisher); // router 应该为Listener
 		virtual ~RtmpTransport();
+
+	public:
+		virtual void FillJson(json& jsonObject) const;
+
+		/* Methods inherited from Channel::ChannelSocket::RequestHandler. */
+	public:
+		void HandleRequest(Channel::ChannelRequest* request) override;
+
+		/* Methods inherited from PayloadChannel::PayloadChannelSocket::RequestHandler. */
+	public:
+		void HandleRequest(PayloadChannel::PayloadChannelRequest* request) override;
+
+		/* Methods inherited from PayloadChannel::PayloadChannelSocket::NotificationHandler. */
+	public:
+		void HandleNotification(PayloadChannel::PayloadChannelNotification* notification) override;
 
 		/* Methods inherited from IRtmpPublisherConsumer::Listener. */
 	public:
-		virtual RtmpClientInfo* GetInfo()                                                  = 0;
+		virtual RtmpRtmpConnType GetInfoType() override;
+		virtual int GetStreamId() override;
 		virtual srs_error_t OnDecodeMessage(RtmpCommonMessage* msg, RtmpPacket** ppacket)  = 0;
 		virtual srs_error_t OnSendAndFreeMessage(RtmpSharedPtrMessage* msg, int stream_id) = 0;
 		virtual srs_error_t OnSendAndFreePacket(RtmpPacket* packet, int stream_id)         = 0;
@@ -65,6 +89,11 @@ namespace RTMP
 			return consumer_;
 		}
 
+		std::string GetId()
+		{
+			return id_;
+		}
+
 	protected:
 		Listener* listener_;
 
@@ -72,6 +101,9 @@ namespace RTMP
 		RtmpConsumer* consumer_;
 
 		bool isPublisher_;
+
+		RTC::Shared* shared;
+		std::string id_;
 	};
 
 } // namespace RTMP
