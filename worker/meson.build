@@ -41,6 +41,12 @@ if get_option('ms_log_file_line')
 endif
 # message('cpp_args is ', cpp_args)
 
+if get_option('ms_rtc_logger_rtp')
+  cpp_args += [
+    '-DMS_RTC_LOGGER_RTP',
+  ]
+endif
+
 common_sources = [
   'src/lib.cpp',
   'src/DepLibSRTP.cpp',
@@ -90,10 +96,12 @@ common_sources = [
   'src/RTC/Producer.cpp',
   'src/RTC/RateCalculator.cpp',
   'src/RTC/Router.cpp',
+  'src/RTC/RtcLogger.cpp',
   'src/RTC/RtpListener.cpp',
   'src/RTC/RtpObserver.cpp',
   'src/RTC/RtpPacket.cpp',
   'src/RTC/RtpProbationGenerator.cpp',
+  'src/RTC/RtpRetransmissionBuffer.cpp',
   'src/RTC/RtpStream.cpp',
   'src/RTC/RtpStreamRecv.cpp',
   'src/RTC/RtpStreamSend.cpp',
@@ -323,12 +331,14 @@ mediasoup_worker_test = executable(
     'test/src/RTC/TestRateCalculator.cpp',
     'test/src/RTC/TestRtpPacket.cpp',
     'test/src/RTC/TestRtpPacketH264Svc.cpp',
+    'test/src/RTC/TestRtpRetransmissionBuffer.cpp',
     'test/src/RTC/TestRtpStreamSend.cpp',
     'test/src/RTC/TestRtpStreamRecv.cpp',
     'test/src/RTC/TestSeqManager.cpp',
     'test/src/RTC/TestTrendCalculator.cpp',
     'test/src/RTC/TestRtpEncodingParameters.cpp',
     'test/src/RTC/Codecs/TestVP8.cpp',
+    'test/src/RTC/Codecs/TestVP9.cpp',
     'test/src/RTC/Codecs/TestH264.cpp',
     'test/src/RTC/Codecs/TestH264_SVC.cpp',
     'test/src/RTC/RTCP/TestFeedbackPsAfb.cpp',
@@ -385,7 +395,9 @@ executable(
     'fuzzer/src/FuzzerUtils.cpp',
     'fuzzer/src/RTC/FuzzerStunPacket.cpp',
     'fuzzer/src/RTC/FuzzerRtpPacket.cpp',
+    'fuzzer/src/RTC/FuzzerRtpRetransmissionBuffer.cpp',
     'fuzzer/src/RTC/FuzzerRtpStreamSend.cpp',
+    'fuzzer/src/RTC/FuzzerSeqManager.cpp',
     'fuzzer/src/RTC/FuzzerTrendCalculator.cpp',
     'fuzzer/src/RTC/RTCP/FuzzerBye.cpp',
     'fuzzer/src/RTC/RTCP/FuzzerFeedbackPs.cpp',

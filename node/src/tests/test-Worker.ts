@@ -32,7 +32,7 @@ test('createWorker() succeeds', async () =>
 	expect(worker.died).toBe(false);
 
 	// eslint-disable-next-line require-atomic-updates
-	worker = await createWorker(
+	worker = await createWorker<{ foo: number; bar?: string }>(
 		{
 			logLevel             : 'debug',
 			logTags              : [ 'info' ],
@@ -41,13 +41,13 @@ test('createWorker() succeeds', async () =>
 			dtlsCertificateFile  : path.join(__dirname, 'data', 'dtls-cert.pem'),
 			dtlsPrivateKeyFile   : path.join(__dirname, 'data', 'dtls-key.pem'),
 			libwebrtcFieldTrials : 'WebRTC-Bwe-AlrLimitedBackoff/Disabled/',
-			appData              : { bar: 456 }
+			appData              : { foo: 456 }
 		});
 	expect(worker.constructor.name).toBe('Worker');
 	expect(typeof worker.pid).toBe('number');
 	expect(worker.closed).toBe(false);
 	expect(worker.died).toBe(false);
-	expect(worker.appData).toEqual({ bar: 456 });
+	expect(worker.appData).toEqual({ foo: 456 });
 
 	worker.close();
 
@@ -297,7 +297,9 @@ test('worker process ignores PIPE, HUP, ALRM, USR1 and USR2 signals', async () =
 	// Windows doesn't have some signals such as SIGPIPE, SIGALRM, SIGUSR1, SIGUSR2
 	// so we just skip this test in Windows.
 	if (os.platform() === 'win32')
+	{
 		return;
+	}
 
 	worker = await createWorker({ logLevel: 'warn' });
 

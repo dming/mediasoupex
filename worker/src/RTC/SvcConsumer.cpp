@@ -426,6 +426,28 @@ namespace RTC
 				requiredBitrate =
 				  this->producerRtpStream->GetLayerBitrate(nowMs, spatialLayer, temporalLayer);
 
+				// When using K-SVC we must subtract the bitrate of the current used layer
+				// if the new layer is the temporal layer 0 of an higher spatial layer.
+				//
+				// clang-format off
+				if (
+					this->encodingContext->IsKSvc() &&
+					requiredBitrate &&
+					temporalLayer == 0 &&
+					this->provisionalTargetSpatialLayer > -1 &&
+					spatialLayer > this->provisionalTargetSpatialLayer
+				)
+				// clang-format on
+				{
+					auto provisionalRequiredBitrate = this->producerRtpStream->GetBitrate(
+					  nowMs, this->provisionalTargetSpatialLayer, this->provisionalTargetTemporalLayer);
+
+					if (requiredBitrate > provisionalRequiredBitrate)
+						requiredBitrate -= provisionalRequiredBitrate;
+					else
+						requiredBitrate = 1u; // Don't set 0 since it would be ignored.
+				}
+
 				MS_DEBUG_DEV(
 				  "testing layers %" PRIi16 ":%" PRIi16 " [virtual bitrate:%" PRIu32
 				  ", required bitrate:%" PRIu32 "]",
@@ -531,8 +553,31 @@ namespace RTC
 		if (!IsActive())
 			return 0u;
 
-		auto nowMs              = DepLibUV::GetTimeMs();
-		uint32_t desiredBitrate = this->producerRtpStream->GetBitrate(nowMs);
+		auto nowMs = DepLibUV::GetTimeMs();
+		uint32_t desiredBitrate{ 0u };
+
+		// When using K-SVC each spatial layer is independent of the others.
+		if (this->encodingContext->IsKSvc())
+		{
+			// Let's iterate all spatial layers of the Producer (from highest to lowest) and
+			// obtain their bitrate. Choose the highest one.
+			// NOTE: When the Producer enables a higher spatial layer, initially the bitrate
+			// oft could be less than the bitrate of a lower one. That's why we iterate all
+			// spatial layers here anyway.
+			for (auto spatialLayer{ this->producerRtpStream->GetSpatialLayers() - 1 }; spatialLayer >= 0;
+			     --spatialLayer)
+			{
+				auto spatialLayerBitrate =
+				  this->producerRtpStream->GetSpatialLayerBitrate(nowMs, spatialLayer);
+
+				if (spatialLayerBitrate > desiredBitrate)
+					desiredBitrate = spatialLayerBitrate;
+			}
+		}
+		else
+		{
+			desiredBitrate = this->producerRtpStream->GetBitrate(nowMs);
+		}
 
 		// If consumer.rtpParameters.encodings[0].maxBitrate was given and it's
 		// greater than computed one, then use it.
@@ -548,8 +593,14 @@ namespace RTC
 	{
 		MS_TRACE();
 
+		packet->logger.consumerId = this->id;
+
 		if (!IsActive())
+		{
+			packet->logger.Dropped(RtcLogger::RtpPacket::DropReason::CONSUMER_INACTIVE);
+
 			return;
+		}
 
 		// clang-format off
 		if (
@@ -558,6 +609,8 @@ namespace RTC
 		)
 		// clang-format on
 		{
+			packet->logger.Dropped(RtcLogger::RtpPacket::DropReason::INVALID_TARGET_LAYER);
+
 			return;
 		}
 
@@ -569,15 +622,21 @@ namespace RTC
 		{
 			MS_DEBUG_DEV("payload type not supported [payloadType:%" PRIu8 "]", payloadType);
 
+			packet->logger.Dropped(RtcLogger::RtpPacket::DropReason::UNSUPPORTED_PAYLOAD_TYPE);
+
 			return;
 		}
 
 		// If we need to sync and this is not a key frame, ignore the packet.
 		if (this->syncRequired && !packet->IsKeyFrame())
+		{
+			packet->logger.Dropped(RtcLogger::RtpPacket::DropReason::NOT_A_KEYFRAME);
+
 			return;
+		}
 
 		// Whether this is the first packet after re-sync.
-		bool isSyncPacket = this->syncRequired;
+		const bool isSyncPacket = this->syncRequired;
 
 		// Sync sequence number and timestamp if required.
 		if (isSyncPacket)
@@ -586,6 +645,7 @@ namespace RTC
 				MS_DEBUG_TAG(rtp, "sync key frame received");
 
 			this->rtpSeqManager.Sync(packet->GetSequenceNumber() - 1);
+			this->encodingContext->SyncRequired();
 
 			this->syncRequired = false;
 		}
@@ -594,11 +654,13 @@ namespace RTC
 		auto previousTemporalLayer = this->encodingContext->GetCurrentTemporalLayer();
 
 		bool marker{ false };
-		bool origMarker = packet->HasMarker();
+		const bool origMarker = packet->HasMarker();
 
 		if (!packet->ProcessPayload(this->encodingContext.get(), marker))
 		{
 			this->rtpSeqManager.Drop(packet->GetSequenceNumber());
+
+			packet->logger.Dropped(RtcLogger::RtpPacket::DropReason::DROPPED_BY_CODEC);
 
 			return;
 		}
@@ -626,6 +688,9 @@ namespace RTC
 		// Rewrite packet.
 		packet->SetSsrc(this->rtpParameters.encodings[0].ssrc);
 		packet->SetSequenceNumber(seq);
+
+		packet->logger.sendRtpTimestamp = packet->GetTimestamp();
+		packet->logger.sendSeqNumber    = seq;
 
 		if (marker)
 		{

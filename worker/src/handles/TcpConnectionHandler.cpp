@@ -9,7 +9,7 @@
 #include <cstring> // std::memcpy()
 
 /* Static methods for UV callbacks. */
-// [dming] 姣忔uv__read鏃堕兘浼氬厛璋冪敤alloc_cb锛屽啀璋冪敤read_cb
+// [dming] 每次uv__read时都会先调用alloc_cb，再调用read_cb
 inline static void onAlloc(uv_handle_t* handle, size_t suggestedSize, uv_buf_t* buf)
 {
 	auto* connection = static_cast<TcpConnectionHandler*>(handle->data);
@@ -103,7 +103,7 @@ void TcpConnectionHandler::Close()
 	{
 		// Use uv_shutdown() so pending data to be written will be sent to the peer
 		// before closing.
-		auto req  = new uv_shutdown_t;
+		auto* req = new uv_shutdown_t;
 		req->data = static_cast<void*>(this);
 		err       = uv_shutdown(
       req, reinterpret_cast<uv_stream_t*>(this->uvHandle), static_cast<uv_shutdown_cb>(onShutdown));
@@ -135,7 +135,7 @@ void TcpConnectionHandler::Setup(
 	MS_TRACE();
 
 	// Set the UV handle.
-	int err = uv_tcp_init(DepLibUV::GetLoop(), this->uvHandle);
+	const int err = uv_tcp_init(DepLibUV::GetLoop(), this->uvHandle);
 
 	if (err != 0)
 	{
@@ -275,8 +275,8 @@ void TcpConnectionHandler::Write(std::vector<WriteData>& datas, TcpConnectionHan
 		written = 0;
 	}
 
-	size_t pendingLen = totalLen - written;
-	auto* writeData   = new UvWriteData(pendingLen);
+	const size_t pendingLen = totalLen - written;
+	auto* writeData         = new UvWriteData(pendingLen);
 
 	writeData->req.data = static_cast<void*>(writeData);
 
@@ -301,7 +301,7 @@ void TcpConnectionHandler::Write(std::vector<WriteData>& datas, TcpConnectionHan
 
 	writeData->cb = cb;
 
-	uv_buf_t buffer = uv_buf_init(reinterpret_cast<char*>(writeData->store), pendingLen);
+	const uv_buf_t buffer = uv_buf_init(reinterpret_cast<char*>(writeData->store), pendingLen);
 
 	err = uv_write(
 	  &writeData->req,

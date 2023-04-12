@@ -14,8 +14,9 @@ import {
 import { Consumer, ConsumerType } from './Consumer';
 import { SctpParameters, NumSctpStreams } from './SctpParameters';
 import { SrtpParameters } from './SrtpParameters';
+import { AppData } from './types';
 
-export type PipeTransportOptions =
+export type PipeTransportOptions<PipeTransportAppData extends AppData = AppData> =
 {
 	/**
 	 * Listening IP address.
@@ -67,7 +68,7 @@ export type PipeTransportOptions =
 	/**
 	 * Custom application data.
 	 */
-	appData?: Record<string, unknown>;
+	appData?: PipeTransportAppData;
 };
 
 export type PipeTransportStat =
@@ -98,7 +99,7 @@ export type PipeTransportStat =
 	tuple: TransportTuple;
 };
 
-export type PipeConsumerOptions =
+export type PipeConsumerOptions<ConsumerAppData> =
 {
 	/**
 	 * The id of the Producer to consume.
@@ -108,7 +109,7 @@ export type PipeConsumerOptions =
 	/**
 	 * Custom application data.
 	 */
-	appData?: Record<string, unknown>;
+	appData?: ConsumerAppData;
 };
 
 export type PipeTransportEvents = TransportEvents &
@@ -121,10 +122,11 @@ export type PipeTransportObserverEvents = TransportObserverEvents &
 	sctpstatechange: [SctpState];
 };
 
-type PipeTransportConstructorOptions = TransportConstructorOptions &
-{
-	data: PipeTransportData;
-};
+type PipeTransportConstructorOptions<PipeTransportAppData> =
+	TransportConstructorOptions<PipeTransportAppData> &
+	{
+		data: PipeTransportData;
+	};
 
 export type PipeTransportData =
 {
@@ -137,8 +139,8 @@ export type PipeTransportData =
 
 const logger = new Logger('PipeTransport');
 
-export class PipeTransport
-	extends Transport<PipeTransportEvents, PipeTransportObserverEvents>
+export class PipeTransport<PipeTransportAppData extends AppData = AppData>
+	extends Transport<PipeTransportEvents, PipeTransportObserverEvents, PipeTransportAppData>
 {
 	// PipeTransport data.
 	readonly #data: PipeTransportData;
@@ -146,7 +148,7 @@ export class PipeTransport
 	/**
 	 * @private
 	 */
-	constructor(options: PipeTransportConstructorOptions)
+	constructor(options: PipeTransportConstructorOptions<PipeTransportAppData>)
 	{
 		super(options);
 
@@ -206,10 +208,14 @@ export class PipeTransport
 	close(): void
 	{
 		if (this.closed)
+		{
 			return;
+		}
 
 		if (this.#data.sctpState)
+		{
 			this.#data.sctpState = 'closed';
+		}
 
 		super.close();
 	}
@@ -223,10 +229,14 @@ export class PipeTransport
 	routerClosed(): void
 	{
 		if (this.closed)
+		{
 			return;
+		}
 
 		if (this.#data.sctpState)
+		{
 			this.#data.sctpState = 'closed';
+		}
 
 		super.routerClosed();
 	}
@@ -277,23 +287,38 @@ export class PipeTransport
 	 *
 	 * @override
 	 */
-	async consume({ producerId, appData }: PipeConsumerOptions): Promise<Consumer>
+	async consume<ConsumerAppData extends AppData = AppData>(
+		{
+			producerId,
+			appData
+		}: PipeConsumerOptions<ConsumerAppData>
+	): Promise<Consumer<ConsumerAppData>>
 	{
 		logger.debug('consume()');
 
 		if (!producerId || typeof producerId !== 'string')
+		{
 			throw new TypeError('missing producerId');
+		}
 		else if (appData && typeof appData !== 'object')
+		{
 			throw new TypeError('if given, appData must be an object');
+		}
 
 		const producer = this.getProducerById(producerId);
 
 		if (!producer)
+		{
 			throw Error(`Producer with id "${producerId}" not found`);
+		}
 
 		// This may throw.
 		const rtpParameters = ortc.getPipeConsumerRtpParameters(
-			producer.consumableRtpParameters, this.#data.rtx);
+			{
+				consumableRtpParameters : producer.consumableRtpParameters,
+				enableRtx               : this.#data.rtx
+			}
+		);
 
 		const reqData =
 		{
@@ -316,7 +341,7 @@ export class PipeTransport
 			type : 'pipe' as ConsumerType
 		};
 
-		const consumer = new Consumer(
+		const consumer = new Consumer<ConsumerAppData>(
 			{
 				internal :
 				{
